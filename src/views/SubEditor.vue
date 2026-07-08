@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="page-wrapper" @click="handleEditGlobalClick">
     <div
       v-if="editorTabsEnabled"
@@ -170,7 +170,7 @@
           <!-- :label="$t(`editorPage.subConfig.basic.url.label`)" -->
           <nut-form-item
             required
-            
+
             v-if="form.source === 'remote'"
             prop="url"
             :rules="[
@@ -291,6 +291,45 @@
             />
           </nut-form-item>
 
+
+          <nut-form-item
+            label="远端拉取节点"
+            prop="relayNodeId"
+            class="remote-relay-node-trigger"
+            v-if="form.source === 'remote'"
+          >
+            <nut-input
+              :model-value="selectedWssRelayClientLabel"
+              :border="false"
+              class="nut-input-text"
+              readonly
+              input-align="right"
+              right-icon="rect-right"
+              @click="openWssRelayClientPicker"
+              @click-right-icon="openWssRelayClientPicker"
+            />
+          </nut-form-item>
+          <nut-form-item
+            label="WSS 连接 Token"
+            v-if="form.source === 'remote'"
+          >
+            <div class="wss-relay-token-status">
+              <nut-tag
+                plain
+                :type="wssRelayTokenInitialized ? 'primary' : 'warning'"
+              >
+                {{ wssRelayTokenStatusLabel }}
+              </nut-tag>
+              <button
+                type="button"
+                class="wss-relay-refresh-btn"
+                title="刷新 WSS 连接状态"
+                @click="refreshWssRelayPanel"
+              >
+                <nut-icon name="refresh" />
+              </button>
+            </div>
+          </nut-form-item>
           <nut-form-item
             :label="$t(`editorPage.subConfig.basic.source.mergeSources`)"
             prop="mergeSources"
@@ -568,6 +607,18 @@
     :ok-text="$t(`editorPage.subConfig.sourceNamePicker.confirm`)"
     @confirm="handleSubFailureModeConfirm"
   />
+
+  <DesktopPicker
+    v-model="selectedWssRelayClientValue"
+    v-model:visible="showWssRelayClientPicker"
+    :columns="wssRelayClientColumns"
+    title="远端拉取节点"
+    :cancel-text="$t('editorPage.subConfig.sourceNamePicker.cancel')"
+    :ok-text="$t('editorPage.subConfig.sourceNamePicker.confirm')"
+    @confirm="handleWssRelayClientConfirm"
+  >
+    <p v-if="wssRelayClientColumns.length <= 1">请先在设置页初始化 WSS 连接 Token</p>
+  </DesktopPicker>
   <tag-popup
     v-model:visible="tagPopupVisible"
     ref="tagPopupRef"
@@ -579,6 +630,7 @@
 <script lang="ts" setup>
 import { useArtifactsStore } from "@/store/artifacts";
 import { useSubsApi } from "@/api/subs";
+import { useSettingsApi, type WssRelayClient } from "@/api/settings";
 import logoIcon from "@/assets/icons/logo.png";
 import logoRedIcon from "@/assets/icons/logo-red.png";
 import { usePopupRoute } from "@/hooks/usePopupRoute";
@@ -642,7 +694,9 @@ const router = useRouter();
 const SUB_EDITOR_TAB_STORAGE_KEY = "sub-editor-active-tab";
 const MANUAL_SUBSCRIPTIONS_FOLD_STORAGE_KEY = "manual-subscriptions-fold";
 const MANUAL_SUBSCRIPTIONS_GROUP_STORAGE_KEY = "manual-subscriptions-group";
+const WSS_RELAY_TOKEN_STORAGE_KEY = "wss-relay-token";
 const subsApi = useSubsApi();
+const settingsApi = useSettingsApi();
 const editType = route.params.editType as string;
 const configName = route.params.id as string;
 const subsStore = useSubsStore();
@@ -657,8 +711,8 @@ const { navBarHeight } = storeToRefs(systemStore);
 const {
     bottomSafeArea,
     // isEditorCommon,
-    // isDefaultIcon, 
-    // isIconColor 
+    // isDefaultIcon,
+    // isIconColor
   } = storeToRefs(globalStore);
 const padding = bottomSafeArea.value + "px";
 const githubUrlRewriter = computed(() => {
@@ -697,6 +751,7 @@ const SUB_EDITOR_PROP_TO_TAB: Partial<Record<string, SubEditorTab>> = {
   ua: "content",
   subUserinfo: "content",
   proxy: "content",
+  relayNodeId: "content",
   mergeSources: "content",
   subscriptionTags: "content",
   firstSubFlow: "content",
@@ -790,7 +845,7 @@ type SubSelectRow = [string, string, string | undefined, string[] | undefined, b
   const sub = computed(() => subsStore.getOneSub(configName));
   const collection = computed(() => subsStore.getOneCollection(configName));
 
-  
+
   const subsSelectList = computed<SubSelectRow[]>(() => {
     return subsStore.subs.map(item => {
       return [
@@ -845,7 +900,7 @@ type SubSelectRow = [string, string, string | undefined, string[] | undefined, b
     if (tagType.value === 'linkTag') {
       form.subscriptionTags = tag;
     } else {
-      form.tag = tag;      
+      form.tag = tag;
     }
   };
 const selectedSubs = computed(() => {
@@ -861,6 +916,86 @@ const selectedSubs = computed(() => {
     }).join(', ')}`
   });
 const selectedSubsDisplay = computed(() => selectedSubs.value.replace(/^:\s*/, ""));
+const wssRelayTokenInitialized = ref<boolean | null>(null);
+const wssRelayStatusLoading = ref(false);
+const wssRelayClients = ref<WssRelayClient[]>([]);
+const showWssRelayClientPicker = ref(false);
+const selectedWssRelayClientValue = ref<string[]>([""]);
+const getStoredWssRelayToken = () => (
+  localStorage.getItem(WSS_RELAY_TOKEN_STORAGE_KEY)
+    || localStorage.getItem("wss-relay-admin-token")
+    || ""
+).trim();
+const wssRelayTokenStatusLabel = computed(() => {
+  if (wssRelayStatusLoading.value) return "正在检查...";
+  if (wssRelayTokenInitialized.value === true) return "后端已初始化";
+  if (wssRelayTokenInitialized.value === false) return "后端未初始化";
+  return "点击刷新检查";
+});
+const refreshWssRelayStatus = async () => {
+  wssRelayStatusLoading.value = true;
+  try {
+    const res = await settingsApi.getSettings();
+    if (res?.data?.status !== "success") return;
+
+    wssRelayTokenInitialized.value = Boolean(res.data.data?.wssRelayToken);
+  } finally {
+    wssRelayStatusLoading.value = false;
+  }
+};
+const formatWssRelayClientLabel = (client: WssRelayClient) => {
+  const displayName = client.name || client.id;
+  return client.pendingCount
+    ? displayName + " (" + client.pendingCount + " pending)"
+    : displayName;
+};
+const wssRelayClientColumns = computed(() => [
+  { text: "本机拉取", value: "" },
+  ...wssRelayClients.value.map((client) => ({
+    text: formatWssRelayClientLabel(client),
+    value: client.id,
+  })),
+]);
+const selectedWssRelayClientLabel = computed(() => {
+  const relayNodeId = form.relayNodeId || "";
+  if (!relayNodeId) return "本机拉取";
+  return wssRelayClientColumns.value.find((item) => item.value === relayNodeId)?.text || relayNodeId;
+});
+const fetchWssRelayClients = async () => {
+  const token = getStoredWssRelayToken();
+  if (!token) {
+    wssRelayClients.value = [];
+    Toast.warn("请先在设置页初始化 WSS 连接 Token");
+    return;
+  }
+  const res = await settingsApi.getWssRelayClients(token);
+  if (res?.data?.status !== "success") return;
+
+  const responseData = res.data.data;
+  const clients = Array.isArray(responseData)
+    ? responseData
+    : Array.isArray(responseData?.clients)
+      ? responseData.clients
+      : [];
+  wssRelayClients.value = clients.filter((client: WssRelayClient) => client?.id);
+  Toast.text("已刷新 " + wssRelayClients.value.length + " 个在线节点");
+};
+const refreshWssRelayPanel = async () => {
+  await refreshWssRelayStatus();
+  await fetchWssRelayClients();
+};
+const openWssRelayClientPicker = async () => {
+  selectedWssRelayClientValue.value = [form.relayNodeId || ""];
+  if (wssRelayClients.value.length === 0) {
+    await refreshWssRelayPanel();
+  }
+  showWssRelayClientPicker.value = true;
+};
+const handleWssRelayClientConfirm = ({ selectedValue }: { selectedValue?: unknown[] }) => {
+  form.relayNodeId = typeof selectedValue?.[0] === "string" ? selectedValue[0] : "";
+  showWssRelayClientPicker.value = false;
+};
+void refreshWssRelayStatus();
   const subFailureModeOptions = computed(() => {
     const prefix = "editorPage.subConfig.basic.ignoreFailedRemoteSub";
     return [
@@ -944,6 +1079,7 @@ const form = reactive<any>({
   mergeSources: "",
   ignoreFailedRemoteSub: false,
   passThroughUA: false,
+  relayNodeId: "",
   icon: "",
   isIconColor: true,
   iconFit: undefined,
@@ -978,6 +1114,7 @@ watchEffect(() => {
         form.url = "";
         form.content = "";
         form.ua = "";
+        form.relayNodeId = "";
         cmStore.setEditCode('SubEditer', "");
         break;
     }
@@ -1035,6 +1172,7 @@ watchEffect(() => {
       form.content = sourceData.content;
       cmStore.setEditCode('SubEditer', sourceData.content);
       form.ua = sourceData.ua;
+      form.relayNodeId = sourceData.relayNodeId || "";
       form._savedUA = sourceData._savedUA;
       if(form.passThroughUA && form.ua){
         showNotify({
@@ -1143,8 +1281,11 @@ const fetchCompareData = async () => {
     }
     if (editType === "collections") {
       data.firstSubFlow = data.firstSubFlow !== false;
+      delete data.relayNodeId;
     } else {
       delete data.firstSubFlow;
+      data.relayNodeId = `${data.relayNodeId || ""}`.trim();
+      if (!data.relayNodeId) delete data.relayNodeId;
     }
     data.tag = [
       ...new Set(
@@ -1318,8 +1459,11 @@ const submit = () => {
     }
     if (editType === "collections") {
       data.firstSubFlow = data.firstSubFlow !== false;
+      delete data.relayNodeId;
     } else {
       delete data.firstSubFlow;
+      data.relayNodeId = `${data.relayNodeId || ""}`.trim();
+      if (!data.relayNodeId) delete data.relayNodeId;
     }
 
     console.log('submit.....\n', data);
@@ -1695,7 +1839,7 @@ const urlValidator = (val: string): Promise<boolean> => {
   const subCheckboxClick = () => {
     const group = getCurrentVisibleRows().map(([name]) => name);
     if (subCheckboxIndeterminate.value) {
-      console.log(`半选, 应变为全选`)  
+      console.log(`半选, 应变为全选`)
       visibleSelectedSubscriptions.value = group;
     } else if (!subCheckbox.value) {
       console.log(`全选, 应变为不选`)
@@ -1972,6 +2116,35 @@ const handleEditGlobalClick = () => {
   }
 }
 
+.wss-relay-token-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
+}
+
+.wss-relay-refresh-btn {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--primary-color);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  :deep(.nut-icon) {
+    font-size: 16px;
+  }
+
+  &:hover,
+  &:focus-visible {
+    background: var(--divider-color);
+  }
+}
 .failure-mode-input {
   cursor: pointer;
 

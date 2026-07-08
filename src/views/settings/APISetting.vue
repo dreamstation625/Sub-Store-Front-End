@@ -132,6 +132,38 @@
       </nut-cell>
     </nut-cell-group>
 
+    <nut-cell-group title="WSS 连接 Token">
+      <div class="wss-token-wrapper">
+        <nut-input
+          v-model="wssRelayToken"
+          class="input"
+          placeholder="用于 wss-client 连接主服务"
+          type="password"
+          input-align="left"
+          @blur="saveWssRelayToken"
+        />
+        <div class="wss-token-actions">
+          <nut-button
+            class="save-btn"
+            type="primary"
+            :loading="creatingWssRelayToken"
+            @click="initWssRelayToken"
+          >
+            初始化
+          </nut-button>
+          <nut-button
+            class="save-btn"
+            plain
+            :disabled="!wssRelayToken"
+            @click="copyWssRelayToken"
+          >
+            复制
+          </nut-button>
+        </div>
+      </div>
+      <p class="wss-token-desc">初始化后复制该 Token，填入 wss-client/config.json 的 token 字段。</p>
+    </nut-cell-group>
+
     <nut-cell-group :title="$t(`apiSettingPage.addApi.title`)">
       <div class="add-api-wrapper">
         <div class="add-form-wrapper">
@@ -229,6 +261,7 @@ import useV3Clipboard from 'vue-clipboard3';
 import { storeToRefs } from 'pinia';
 import { useAppNotifyStore } from '@/store/appNotify';
 import { useSettingsStore } from '@/store/settings';
+import { useSettingsApi } from '@/api/settings';
 import { createGithubProxyUrlRewriter } from '@/utils/githubProxy';
 import { isValidShareBaseUrl, normalizeShareBaseUrl } from '@/utils/share';
 
@@ -236,6 +269,8 @@ const { t } = useI18n();
 const { copy, isSupported } = useClipboard();
 const { toClipboard: copyFallback } = useV3Clipboard();
 const { showNotify } = useAppNotifyStore();
+const WSS_RELAY_TOKEN_STORAGE_KEY = 'wss-relay-token';
+const settingsApi = useSettingsApi();
 
 const { icon, env, isEnvReady } = useBackend();
 const settingsStore = useSettingsStore();
@@ -266,13 +301,60 @@ const error = ref('');
 const shareBaseUrlError = ref('');
 const checkingAPI = ref(false);
 const switchingAPI = ref(false);
-
+const creatingWssRelayToken = ref(false);
+const wssRelayToken = ref(
+  localStorage.getItem(WSS_RELAY_TOKEN_STORAGE_KEY)
+    || localStorage.getItem('wss-relay-admin-token')
+    || '',
+);
 
 const inputType = ref('path');
 const parsedHost = ref('');
 const parsedPath = ref('');
 const previewUrl = ref('');
 const currentOrigin = ref(window.location.origin);
+
+const saveWssRelayToken = () => {
+  const token = wssRelayToken.value.trim();
+  if (token) {
+    localStorage.setItem(WSS_RELAY_TOKEN_STORAGE_KEY, token);
+  } else {
+    localStorage.removeItem(WSS_RELAY_TOKEN_STORAGE_KEY);
+  }
+};
+
+const initWssRelayToken = async () => {
+  if (creatingWssRelayToken.value) return;
+  creatingWssRelayToken.value = true;
+  try {
+    const currentToken = wssRelayToken.value.trim();
+    const res = await settingsApi.createWssRelayToken(currentToken, false);
+    if (res?.data?.status !== 'success') return;
+
+    const token = res.data.data?.token || '';
+    if (!token) return;
+
+    wssRelayToken.value = token;
+    saveWssRelayToken();
+    showNotify({ title: 'WSS 连接 Token 已初始化', type: 'success' });
+  } finally {
+    creatingWssRelayToken.value = false;
+  }
+};
+
+const copyWssRelayToken = async () => {
+  const token = wssRelayToken.value.trim();
+  if (!token) {
+    showNotify({ title: '请先初始化 WSS 连接 Token', type: 'danger' });
+    return;
+  }
+  if (isSupported) {
+    await copy(token);
+  } else {
+    await copyFallback(token);
+  }
+  showNotify({ title: 'WSS 连接 Token 已复制', type: 'success' });
+};
 
 const copyApi = async (api: HostAPI) => {
   const url = new URL(window.location.origin);
@@ -733,6 +815,27 @@ onMounted(() => {
         color: var(--comment-text-color);
         margin-left: auto;
       }
+    }
+
+    .wss-token-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px;
+      background: var(--card-color);
+    }
+
+    .wss-token-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .wss-token-desc {
+      margin: 0;
+      padding: 0 16px 16px;
+      color: var(--comment-text-color);
+      font-size: 12px;
+      line-height: 1.5;
     }
 
     .api-list-item {

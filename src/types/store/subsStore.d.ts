@@ -41,6 +41,7 @@ interface Sub {
   isIconColor?: boolean;
   iconFit?: ImageFit | null;
   ua?: string;
+  relayNodeId?: string;
   mergeSources?: string;
   subUserinfo?: string;
   tag?: string[];
