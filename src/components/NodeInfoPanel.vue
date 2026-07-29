@@ -53,9 +53,12 @@
         </div>
       </nut-tabpane>
       <nut-tabpane title="JSON">
-        <div class="input-wrapper">
-          <nut-textarea :model-value="JSON.stringify(props.nodeInfo, null, 2)" :rows="15" readonly/>
-        </div>
+        <cmView
+          :id="nodeInfoPreviewId"
+          :isReadOnly="true"
+          :toolbar-actions="previewToolbarActions"
+          toolbar-variant="preview"
+        />
       </nut-tabpane>
     </nut-tabs>
     <img v-if="showQrCode && qrcode" :src="qrcode" alt="QR Code" class="qrcode" />
@@ -69,6 +72,8 @@
 </template>
 
 <script lang="ts" setup>
+  import { useCodeStore } from '@/store/codeStore';
+  import cmView from '@/views/editCode/cmView.vue';
   import { useQRCode } from '@vueuse/integrations/useQRCode';
   import { computed, ref } from 'vue';
 
@@ -81,6 +86,11 @@
 
   const overlayVisible = ref(true);
   const currentTab = ref(0);
+  const nodeInfoPreviewId = 'nodeInfoPreview';
+  const previewToolbarActions = ['language', 'search', 'copy'];
+  const cmStore = useCodeStore();
+
+  cmStore.setEditCode(nodeInfoPreviewId, JSON.stringify(props.nodeInfo, null, 2));
 
   const hasIpApiData = computed(() => {
     return props.ipApiStatus === 'success' && Boolean(props.ipApi);
@@ -190,23 +200,6 @@
 
   .ip-api-retry-btn {
     margin-top: 8px;
-  }
-
-  .input-wrapper {
-    display: flex;
-    align-items: center;
-
-    >view.nut-textarea {
-      background: transparent;
-      padding: 8px 12px;
-      // border-bottom: 1px solid;
-      color: var(--second-text-color);
-      border-color: var(--lowest-text-color);
-
-      :deep(textarea) {
-        color: inherit;
-      }
-    }
   }
 
   .qrcode {

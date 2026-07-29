@@ -27,6 +27,14 @@ export function useFilesApi() {
         method: 'get',
       });
     },
+    exportFile: (name: string): AxiosPromise<Blob> => {
+      return request({
+        url: `/api/wholeFile/${encodeURIComponent(name)}`,
+        method: 'get',
+        params: { raw: 1 },
+        responseType: 'blob',
+      });
+    },
     createFile: (data: any): AxiosPromise<MyAxiosRes> => {
       return request({
         url: '/api/files',

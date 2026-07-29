@@ -12,6 +12,7 @@ type Translate = (key: string) => string;
 const dynamicImportErrorPatterns = [
   /Failed to fetch dynamically imported module/i,
   /error loading dynamically imported module/i,
+  /Unable to preload CSS/i,
   /Importing a module script failed/i,
   /Failed to load module script/i,
   /Loading chunk .+ failed/i,

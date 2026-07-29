@@ -463,7 +463,8 @@ export const getSharePublicUrl = ({
     throw new Error('INVALID_SECRET_PATH');
   }
 
-  const publicHost = normalizedShareBaseUrl || host.replace(new RegExp(`${secretPath}$`), '');
+  const publicHost = normalizedShareBaseUrl
+    || (host.endsWith(secretPath) ? host.slice(0, -secretPath.length) : host);
 
   return `${publicHost}/share/${type}/${encodeURIComponent(name)}?token=${encodeURIComponent(token)}`;
 };

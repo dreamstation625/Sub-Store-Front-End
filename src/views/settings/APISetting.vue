@@ -238,12 +238,12 @@
       <p>{{ $t(`apiSettingPage.apiSettingDesc1`) }}</p>
       <span>{{ $t(`apiSettingPage.apiSettingDesc2`) }}</span>
       <a
-        href="https://xream.notion.site/Sub-Store-abe6a96944724dc6a36833d5c9ab7c87"
+        href="https://github.com/sub-store-org/Sub-Store/wiki#%E5%AE%89%E8%A3%85"
         target="_blank"
       >
-        https://xream.notion.site/Sub-Store-abe6a96944724dc6a36833d5c9ab7c87</a>
+        {{ $t(`apiSettingPage.apiSettingWiki`) }}</a>
       <br/>
-      4. <a href="https://t.me/zhetengsha/218" target="_blank">{{ $t('magicPath.troubleshooting') }}</a>
+      4. <a href="https://telegram.me/zhetengsha/218" target="_blank">{{ $t('magicPath.troubleshooting') }}</a>
     </div>
   </div>
 </template>

@@ -21,6 +21,14 @@ export function useSubsApi() {
         method: 'get',
       });
     },
+    exportOne: (type: 'sub' | 'collection', name: string): AxiosPromise<Blob> => {
+      return request({
+        url: `/api/${type}/${encodeURIComponent(name)}`,
+        method: 'get',
+        params: { raw: 1 },
+        responseType: 'blob',
+      });
+    },
     downloadOne: (name: string, params?: any): AxiosPromise<MyAxiosRes> => {
       return request({
         url: `/download/${encodeURIComponent(name)}`,

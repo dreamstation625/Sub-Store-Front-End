@@ -5,7 +5,14 @@ type EditorSectionFoldMode = 'expanded' | 'collapsed';
 type EditorGroupingMode = 'edit-only' | 'disabled' | 'always';
 type ActionButtonsDisplayMode = 'responsive' | 'compact' | 'loose';
 type GistUploadMode = 'base64' | 'plaintext' | 'age';
+type DownloadTokenStrategy = 'ask' | 'overwrite' | 'keep';
 type ImageFit = import('@/utils/iconFit').ImageFit;
+
+interface GistBackupSyncOptions {
+  keep?: string[];
+  encode?: GistUploadMode;
+  tokenStrategy?: Exclude<DownloadTokenStrategy, 'ask'>;
+}
 
 type SettingsStoreState = SettingsBase & SettingsPostData;
 
@@ -51,6 +58,7 @@ interface SettingsPostData {
     light: CustomTheme;
   };
   gistUpload?: GistUploadMode;
+  gistDownloadTokenStrategy?: DownloadTokenStrategy;
   appearanceSetting?: {
     isSimpleMode?: boolean; // 简洁模式
     isLeftRight?: boolean; // 卡片右滑呼出

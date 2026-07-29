@@ -12,7 +12,7 @@
       <p class="preview-node-names-desc">
         {{ t('comparePage.nodeNames.descriptionBefore') }}
         <a
-          href="https://t.me/zhetengsha/5277"
+          href="https://telegram.me/zhetengsha/5277"
           target="_blank"
           rel="noopener noreferrer"
           @click.stop

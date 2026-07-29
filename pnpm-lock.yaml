@@ -196,8 +196,8 @@ importers:
         specifier: ^1.1.0
         version: 1.1.0(monaco-editor@0.33.0)
       vite-plugin-pwa:
-        specifier: ^0.16.7
-        version: 0.16.7(vite@3.2.11(@types/node@18.19.130)(sass@1.101.0)(terser@5.48.0))(workbox-build@7.4.1)(workbox-window@7.4.1)
+        specifier: ^1.3.0
+        version: 1.3.0(vite@3.2.11(@types/node@18.19.130)(sass@1.101.0)(terser@5.48.0))(workbox-build@7.4.1)(workbox-window@7.4.1)
       vite-plugin-style-import:
         specifier: ^2.0.0
         version: 2.0.0(vite@3.2.11(@types/node@18.19.130)(sass@1.101.0)(terser@5.48.0))
@@ -2846,6 +2846,15 @@ packages:
   fastq@1.20.1:
     resolution: {integrity: sha512-GGToxJ/w1x32s/D2EKND7kTil4n8OVk/9mycTc4VDza13lOvpUZTGX3mFSCtV9ksdGBVzvsyAVLM6mHFThxXxw==}
 
+  fdir@6.5.0:
+    resolution: {integrity: sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==}
+    engines: {node: '>=12.0.0'}
+    peerDependencies:
+      picomatch: ^3 || ^4
+    peerDependenciesMeta:
+      picomatch:
+        optional: true
+
   file-entry-cache@6.0.1:
     resolution: {integrity: sha512-7Gps/XWymbLk2QLYK4NzpMOrYjMhdIxXuIvy2QBsLE6ljuodKvdkWs/cpyJJ3CVIVpH0Oi1Hvg1ovbMzLdFBBg==}
     engines: {node: ^10.12.0 || >=12.0.0}
@@ -4653,6 +4662,10 @@ packages:
   tiny-emitter@2.1.0:
     resolution: {integrity: sha512-NB6Dk1A9xgQPMoGqC5CVXn123gWyte215ONT5Pp5a0yt4nlEoO1ZWeCwpncaekPHXO60i47ihFnZPiRPjRMq4Q==}
 
+  tinyglobby@0.2.17:
+    resolution: {integrity: sha512-wXR/dYpcqKmfWpEdZjiKJOwCNFndD0DMnrW/cYjVGttEkBfVgcLFHoNrlj47mjOVic9yyNu65alsgF4NQyTa2g==}
+    engines: {node: '>=12.0.0'}
+
   tmp@0.2.7:
     resolution: {integrity: sha512-e0votIpp4Uo2AJYSzVHV6xCcawuiez3DzqDAbrTc3YxBkplN6e+dM13ZeIcZnDg/QpSuU2zfZ3rzwY8ukEnaXw==}
     engines: {node: '>=14.14'}
@@ -4900,13 +4913,17 @@ packages:
     peerDependencies:
       monaco-editor: '>=0.33.0'
 
-  vite-plugin-pwa@0.16.7:
-    resolution: {integrity: sha512-4WMA5unuKlHs+koNoykeuCfTcqEGbiTRr8sVYUQMhc6tWxZpSRnv9Ojk4LKmqVhoPGHfBVCdGaMo8t9Qidkc1Q==}
+  vite-plugin-pwa@1.3.0:
+    resolution: {integrity: sha512-c5kMgN+ITrOtHXp8PAtk2uOIEea6XjP/unCGxOWWBzQ6qa65qj/awHg0wf+QF9E/2u9vh86LqxPwzEPNbM2r5A==}
     engines: {node: '>=16.0.0'}
     peerDependencies:
-      vite: ^3.1.0 || ^4.0.0 || ^5.0.0-0
-      workbox-build: ^7.0.0
-      workbox-window: ^7.0.0
+      '@vite-pwa/assets-generator': ^1.0.0
+      vite: ^3.1.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
+      workbox-build: ^7.4.1
+      workbox-window: ^7.4.1
+    peerDependenciesMeta:
+      '@vite-pwa/assets-generator':
+        optional: true
 
   vite-plugin-style-import@2.0.0:
     resolution: {integrity: sha512-qtoHQae5dSUQPo/rYz/8p190VU5y19rtBaeV7ryLa/AYAU/e9CG89NrN/3+k7MR8mJy/GPIu91iJ3zk9foUOSA==}
@@ -6708,7 +6725,7 @@ snapshots:
       debug: 4.4.3
       globby: 11.0.4
       is-glob: 4.0.3
-      semver: 7.8.4
+      semver: 7.8.5
       tsutils: 3.21.0(typescript@4.9.5)
     optionalDependencies:
       typescript: 4.9.5
@@ -7879,7 +7896,7 @@ snapshots:
       is-glob: 4.0.3
       minimatch: 3.1.5
       resolve: 1.22.12
-      semver: 7.8.4
+      semver: 7.8.5
     transitivePeerDependencies:
       - '@typescript-eslint/parser'
       - eslint-import-resolver-typescript
@@ -8189,6 +8206,10 @@ snapshots:
   fastq@1.20.1:
     dependencies:
       reusify: 1.1.0
+
+  fdir@6.5.0(picomatch@4.0.4):
+    optionalDependencies:
+      picomatch: 4.0.4
 
   file-entry-cache@6.0.1:
     dependencies:
@@ -9227,7 +9248,7 @@ snapshots:
     dependencies:
       hosted-git-info: 3.0.6
       resolve: 1.22.12
-      semver: 7.8.4
+      semver: 7.8.5
       validate-npm-package-license: 3.0.4
 
   normalize-path@3.0.0: {}
@@ -10186,6 +10207,11 @@ snapshots:
 
   tiny-emitter@2.1.0: {}
 
+  tinyglobby@0.2.17:
+    dependencies:
+      fdir: 6.5.0(picomatch@4.0.4)
+      picomatch: 4.0.4
+
   tmp@0.2.7: {}
 
   to-object-path@0.3.0:
@@ -10451,11 +10477,11 @@ snapshots:
     dependencies:
       monaco-editor: 0.33.0
 
-  vite-plugin-pwa@0.16.7(vite@3.2.11(@types/node@18.19.130)(sass@1.101.0)(terser@5.48.0))(workbox-build@7.4.1)(workbox-window@7.4.1):
+  vite-plugin-pwa@1.3.0(vite@3.2.11(@types/node@18.19.130)(sass@1.101.0)(terser@5.48.0))(workbox-build@7.4.1)(workbox-window@7.4.1):
     dependencies:
       debug: 4.4.3
-      fast-glob: 3.3.3
       pretty-bytes: 6.1.1
+      tinyglobby: 0.2.17
       vite: 3.2.11(@types/node@18.19.130)(sass@1.101.0)(terser@5.48.0)
       workbox-build: 7.4.1
       workbox-window: 7.4.1

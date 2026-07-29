@@ -1,7 +1,5 @@
 import { nextTick } from 'vue';
 import { useEnvApi } from '@/api/env';
-import { useSubsApi } from '@/api/subs';
-import { useFilesApi } from '@/api/files';
 
 import AppLayout from '@/layout/AppLayout.vue';
 import { useGlobalStore } from '@/store/global';
@@ -426,24 +424,6 @@ router.beforeResolve(async (to, from) => {
     }
   } else {
     globalStore = useGlobalStore();
-  }
-
-  // 进入编辑页面前查询是否存在订阅
-  if (to.fullPath.startsWith('/edit/')) {
-    const name = (to.params.id || to.params.name) as string;
-    if (!['UNTITLED', 'UNTITLED-mihomoConfig', 'UNTITLED-mihomoProfile'].includes(name)) {
-      try {
-        if (to.params.editType === 'subs') {
-          await useSubsApi().getOne('sub', name);
-        } else if (to.params.editType === 'collections') {
-          await useSubsApi().getOne('collection', name);
-        }else if (to.params.editType === 'files') {
-          await useFilesApi().getWholeFile(name);
-        }
-      } catch {
-        router.replace('/404');
-      }
-    }
   }
 
   // console.log(`beforeResolve ${from.path} => ${to.path}`)

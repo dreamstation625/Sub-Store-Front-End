@@ -40,6 +40,14 @@ const getSettingsErrorMessage = (data?: MyAxiosRes) => {
   return data?.status === "failed" ? data.error?.message : "";
 };
 
+export const normalizeGistDownloadTokenStrategy = (
+  value: unknown,
+): DownloadTokenStrategy => {
+  return value === "overwrite" || value === "keep" || value === "ask"
+    ? value
+    : "ask";
+};
+
 const createAppearanceSettingPatch = (
   next?: SettingsPostData["appearanceSetting"],
   current?: SettingsPostData["appearanceSetting"],
@@ -261,6 +269,7 @@ export const useSettingsStore = defineStore("settingsStore", {
         useNarrowModeOnWideScreen: getCachedWideScreenNarrowMode(),
       },
       gistUpload: "base64",
+      gistDownloadTokenStrategy: "ask",
       avatarUrl: "",
       artifactStore: "",
       artifactStoreStatus: "",
@@ -383,6 +392,9 @@ export const useSettingsStore = defineStore("settingsStore", {
         this.hasRemoteEditorGroupingMode = hasRemoteEditorGroupingMode(res.data.data.appearanceSetting);
         this.applyAppearanceSetting(res.data.data.appearanceSetting);
         this.gistUpload = res.data.data?.gistUpload ?? "base64";
+        this.gistDownloadTokenStrategy = normalizeGistDownloadTokenStrategy(
+          res.data.data.gistDownloadTokenStrategy,
+        );
       } else {
         this.hasFetchedSettings = false;
         showNotify({
@@ -391,7 +403,10 @@ export const useSettingsStore = defineStore("settingsStore", {
         });
       }
     },
-    async changeSettings(data: SettingsPostData) {
+    async changeSettings(
+      data: SettingsPostData,
+      options?: { notifySuccess?: boolean },
+    ) {
       const { showNotify } = useAppNotifyStore();
       const res = await settingsApi.setSettings(data);
       if (res?.data?.status === "success" && res?.data?.data) {
@@ -419,7 +434,12 @@ export const useSettingsStore = defineStore("settingsStore", {
         this.artifactStore = res.data.data.artifactStore || "";
         this.artifactStoreStatus = res.data.data.artifactStoreStatus || "";
         this.gistUpload = res.data.data.gistUpload || "base64";
-        showNotify({ type: "success", title: t(`myPage.notify.save.succeed`) });
+        this.gistDownloadTokenStrategy = normalizeGistDownloadTokenStrategy(
+          res.data.data.gistDownloadTokenStrategy,
+        );
+        if (options?.notifySuccess !== false) {
+          showNotify({ type: "success", title: t(`myPage.notify.save.succeed`) });
+        }
         return true;
       } else {
         showNotify({
@@ -530,51 +550,54 @@ export const useSettingsStore = defineStore("settingsStore", {
     async changeAppearanceSetting(data: SettingsPostData) {
       Toast.loading("保存外观设置中...", { cover: true, id: "theme__loading" });
       const { showNotify } = useAppNotifyStore();
-      const forceEditorGroupingMode = Boolean(
-        data.appearanceSetting
-        && !this.hasRemoteEditorGroupingMode
-        && this.hasCachedEditorGroupingMode
-        && isEditorGroupingMode(data.appearanceSetting.editorGroupingMode)
-      );
-      const requestData = data.appearanceSetting
-        ? {
-            ...data,
-            appearanceSetting: createAppearanceSettingPatch(
-              data.appearanceSetting,
-              this.appearanceSetting,
-              { forceEditorGroupingMode },
-            ),
-          }
-        : data;
-      const res = await settingsApi.setSettings(requestData);
-      if (res?.data?.status === "success" && res?.data?.data) {
-        const hasAppearanceSettingPatch = hasRemoteAppearanceSetting(requestData.appearanceSetting);
-        const responseHasAppearanceSetting = hasRemoteAppearanceSetting(res.data.data.appearanceSetting);
-        const responseHasEditorGroupingMode = hasRemoteEditorGroupingMode(res.data.data.appearanceSetting);
-        const requestHasEditorGroupingMode = isEditorGroupingMode(requestData.appearanceSetting?.editorGroupingMode);
-        this.hasRemoteAppearanceSetting = this.hasRemoteAppearanceSetting
-          || responseHasAppearanceSetting;
-        this.hasRemoteEditorGroupingMode = responseHasEditorGroupingMode;
-        this.applyAppearanceSetting(
-          hasAppearanceSettingPatch
-            ? {
-                ...this.appearanceSetting,
-                ...requestData.appearanceSetting,
-              }
-            : res.data.data.appearanceSetting,
-          {
-            cacheEditorGroupingMode: responseHasEditorGroupingMode
-              || requestHasEditorGroupingMode
-              || this.hasCachedEditorGroupingMode,
-          },
+      try {
+        const forceEditorGroupingMode = Boolean(
+          data.appearanceSetting
+          && !this.hasRemoteEditorGroupingMode
+          && this.hasCachedEditorGroupingMode
+          && isEditorGroupingMode(data.appearanceSetting.editorGroupingMode)
         );
-      } else {
-        showNotify({
-          title: `保存外观设置失败`,
-          type: "danger",
-        });
+        const requestData = data.appearanceSetting
+          ? {
+              ...data,
+              appearanceSetting: createAppearanceSettingPatch(
+                data.appearanceSetting,
+                this.appearanceSetting,
+                { forceEditorGroupingMode },
+              ),
+            }
+          : data;
+        const res = await settingsApi.setSettings(requestData);
+        if (res?.data?.status === "success" && res?.data?.data) {
+          const hasAppearanceSettingPatch = hasRemoteAppearanceSetting(requestData.appearanceSetting);
+          const responseHasAppearanceSetting = hasRemoteAppearanceSetting(res.data.data.appearanceSetting);
+          const responseHasEditorGroupingMode = hasRemoteEditorGroupingMode(res.data.data.appearanceSetting);
+          const requestHasEditorGroupingMode = isEditorGroupingMode(requestData.appearanceSetting?.editorGroupingMode);
+          this.hasRemoteAppearanceSetting = this.hasRemoteAppearanceSetting
+            || responseHasAppearanceSetting;
+          this.hasRemoteEditorGroupingMode = responseHasEditorGroupingMode;
+          this.applyAppearanceSetting(
+            hasAppearanceSettingPatch
+              ? {
+                  ...this.appearanceSetting,
+                  ...requestData.appearanceSetting,
+                }
+              : res.data.data.appearanceSetting,
+            {
+              cacheEditorGroupingMode: responseHasEditorGroupingMode
+                || requestHasEditorGroupingMode
+                || this.hasCachedEditorGroupingMode,
+            },
+          );
+        } else {
+          showNotify({
+            title: `保存外观设置失败`,
+            type: "danger",
+          });
+        }
+      } finally {
+        Toast.hide("theme__loading");
       }
-      Toast.hide("theme__loading");
     },
   },
 });

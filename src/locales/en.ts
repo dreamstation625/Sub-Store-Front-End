@@ -275,7 +275,8 @@ export default {
       },
     },
     copyNotify: {
-      succeed: "Successfully copied link!",
+      succeed: "Link copied successfully\nUse sync to avoid exposing the path",
+      succeedWithShare: "Link copied successfully\nUse share/sync to avoid exposing the path",
       failed: "Failed to copy subscription link!\n{e}",
     },
     copyConfigNotify: {
@@ -488,7 +489,7 @@ export default {
           label: 'Pass Through Single Subscription Traffic Info',
           tips: {
             title: 'Pass Through Single Subscription Traffic Info',
-            content: 'By default, the first single subscription traffic info is passed through.\n\nTo merge traffic info from all single subscriptions in the collection, use the script at https://t.me/zhetengsha/3070',
+            content: 'By default, the first single subscription traffic info is passed through.\n\nTo merge traffic info from all single subscriptions in the collection, use the script at https://telegram.me/zhetengsha/3070',
             okText: 'View',
           },
         },
@@ -677,6 +678,7 @@ export default {
             "mieru",
             "sudoku",
             "MASQUE",
+            "Shadow QUIC",
             "NaïveProxy",
             "AnyTLS",
             'TrustTunnel',
@@ -906,6 +908,19 @@ export default {
     cacheConfig: "Cache Configuration",
     frontEndConfig: "Front-End Configuration",
     githubConfig: 'GitHub Configuration',
+    downloadTokenStrategy: {
+      label: "Token handling when downloading",
+      ask: "Always ask (default)",
+      overwrite: "Overwrite Token",
+      keep: "Keep current Token",
+      dialog: {
+        title: "Please choose",
+        content: "To keep the GitHub Token currently configured on this device, choose Keep (backend version must be >= 2.19.83).",
+        doNotAskAgain: "Don't ask again (GitHub settings)",
+        overwrite: "Overwrite (Token may need to be configured again)",
+        keep: "Keep current Token and overwrite other data",
+      },
+    },
     logsTitle: 'Backend Logs',
     storage: {
       gist: {
@@ -1083,7 +1098,7 @@ export default {
         tips: {
           title: "Upload Artifact",
           content:
-            "Requires backend >= 2.23.16.\n\nWhen enabled, scheduled sync uploads the generated artifact to the current sync storage, such as Gist.\n\nWhen disabled, scheduled sync only runs artifact generation and updates the last run time. It does not upload or create a new Gist URL. Use this to refresh caches, or to run custom upload/backup logic in subscriptions/files, such as uploading to another Gist or backing up/restoring via WebDAV.\n\nReferences:\nhttps://t.me/zhetengsha/1428\nhttps://t.me/zhetengsha/5261",
+            "Requires backend >= 2.23.16.\n\nWhen enabled, scheduled sync uploads the generated artifact to the current sync storage, such as Gist.\n\nWhen disabled, scheduled sync only runs artifact generation and updates the last run time. It does not upload or create a new Gist URL. Use this to refresh caches, or to run custom upload/backup logic in subscriptions/files, such as uploading to another Gist or backing up/restoring via WebDAV.\n\nReferences:\nhttps://telegram.me/zhetengsha/1428\nhttps://telegram.me/zhetengsha/5261",
         },
       },
       cron: {
@@ -1384,7 +1399,8 @@ export default {
     apiSettingTitle: "Backend Management",
     apiSettingDesc0: `1. When the backend server address is https://api.com, an attempt is made to request https://api.com/api/utils/env to verify backend availability. When the backend server address cannot be added, try accessing this address first.`,
     apiSettingDesc1: `2. HTTPS front-end cannot request non-local HTTP backend(Some browsers also cannot access the local HTTP backend.). Please configure a reverse proxy or host your own HTTP front-end on your LAN.`,
-    apiSettingDesc2: `Add the backend server address, such as the backend service built on server/NAS/Android/cloud platform. You can refer to XiaoYi's tutorial on setting up a backend: `,
+    apiSettingDesc2: `Add the backend server address, such as the backend service built on server/NAS/Android/cloud platform. You can refer to `,
+    apiSettingWiki: `Wiki#Install`,
     currentApi: {
       title: "Current Backend",
     },

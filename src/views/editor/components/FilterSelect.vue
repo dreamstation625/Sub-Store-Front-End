@@ -75,6 +75,7 @@
         'mieru',
         'sudoku',
         'masque',
+        'shadowquic',
         'naive',
         'anytls',
         'trusttunnel',

@@ -10,7 +10,7 @@ export interface PreviewNodeInfo {
 export const PREVIEW_NODE_INFO_PROMPT_REFERENCE = [
   'async function operator(proxies, targetPlatform, context) {',
   '  // 更多需求 可参考 https://raw.githubusercontent.com/sub-store-org/Sub-Store/refs/heads/master/scripts/demo.js',
-  '  // Sub-Store 脚本教程合集 https://t.me/zhetengsha/214',
+  '  // Sub-Store 脚本教程合集 https://telegram.me/zhetengsha/214',
   '  return proxies.map(proxy => {',
   '    // 订阅名称',
   '    const subName = proxy._subDisplayName || proxy._subName ',

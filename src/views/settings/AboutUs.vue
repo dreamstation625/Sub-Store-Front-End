@@ -46,7 +46,7 @@
             <template v-slot:link>
               <a target="_blank" href="https://github.com/sub-store-org">{{ $t(`aboutUsPage.projectInfo.link`)  }}</a>
               &nbsp;&nbsp;
-              <a target="_blank" href="https://t.me/cool_scripts">Telegram</a>
+              <a target="_blank" href="https://telegram.me/cool_scripts">Telegram</a>
             </template>
           </nut-cell>
           <nut-cell
@@ -58,7 +58,7 @@
             <template v-slot:link>
               <a target="_blank" href="https://github.com/sub-store-org/Sub-Store/wiki">{{ $t(`aboutUsPage.projectInfo.link`)  }}</a>
               &nbsp;&nbsp;
-              <a target="_blank" href="https://t.me/zhetengsha/214">Telegram</a>
+              <a target="_blank" href="https://telegram.me/zhetengsha/214">Telegram</a>
             </template>
           </nut-cell>
         </nut-cell-group>

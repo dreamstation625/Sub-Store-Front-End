@@ -7,9 +7,7 @@ import { createSvgIconsPlugin } from "vite-plugin-svg-icons";
 import viteCompression from "vite-plugin-compression";
 import { VitePWA } from "vite-plugin-pwa";
 
-const version = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "package.json"), "utf-8")
-).version.trim();
+const version = JSON.parse(fs.readFileSync(path.join(__dirname, "package.json"), "utf-8")).version.trim();
 
 const alias: Record<string, string> = {
   "@": path.resolve(__dirname, "src"),
@@ -64,7 +62,7 @@ const viteConfig = defineConfig((mode: ConfigEnv) => {
         srcDir: "src",
         outDir: "dist",
         strategies: "generateSW",
-        registerType: "autoUpdate",
+        registerType: "prompt",
         // minify: true,
         // includeAssets: ['favicon.svg'],
         manifest: {
@@ -106,40 +104,22 @@ const viteConfig = defineConfig((mode: ConfigEnv) => {
           ],
         },
         workbox: {
-          maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+          globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest,json}"],
+          navigateFallback: "/index.html",
           navigateFallbackDenylist: [/(^|\/.+)\/(api|download|share)\/.+/],
-          // globPatterns: ['**/*.{css,js,gz,eot,html,svg,png,ico,ttf,woff2}'],
           runtimeCaching: [
             {
-              urlPattern: /(^|\/.+)\/(api|download|share)\/.+/,
-              handler: "NetworkOnly",
-            },
-            {
-              urlPattern: /.*\.(?:js|css|gz|html|json)/i, // json
-              handler: "CacheFirst",
+              urlPattern: ({ url, request }) => request.destination === "script" && url.origin === self.location.origin,
+              handler: "StaleWhileRevalidate",
               options: {
-                cacheName: "sub-store-js-cache",
-                expiration: {
-                  maxEntries: 30,
-                  maxAgeSeconds: 60 * 60 * 24 * 30,
-                },
-                cacheableResponse: {
-                  statuses: [200],
-                },
+                cacheName: "js-cache",
               },
             },
             {
-              urlPattern: /https:\/\/avatars\.githubusercontent\.com\/u\/\d+(?:\?.*)?$|.*\.(?:png|svg|ico|jpe?g|webp|avif|gif|woff2?|ttf|eot|otf)(?:\?.*)?$/i,
+              urlPattern: ({ request }) => request.destination === "style" || request.destination === "image" || request.destination === "font",
               handler: "CacheFirst",
               options: {
-                cacheName: "sub-store-res-cache",
-                expiration: {
-                  maxEntries: 300,
-                  maxAgeSeconds: 60 * 60 * 24 * 365,
-                },
-                cacheableResponse: {
-                  statuses: [0, 200],
-                },
+                cacheName: "asset-cache",
               },
             },
           ],
@@ -174,26 +154,20 @@ const viteConfig = defineConfig((mode: ConfigEnv) => {
           entryFileNames: "[name].js",
           chunkFileNames: "chunks/[name]-[hash].js",
           assetFileNames: (assetInfo) => {
-            const ext = assetInfo.name?.split('.').pop()?.toLowerCase() ?? '';
-            if (/^(png|jpe?g|svg|webp|avif|gif|ico)$/.test(ext)) return 'images/[name].[ext]';
-            if (/^(woff2?|ttf|eot|otf)$/.test(ext)) return 'fonts/[name].[ext]';
-            if (ext === 'css') return 'css/[name].[ext]';
-            return '[name].[ext]';
+            const ext = assetInfo.name?.split(".").pop()?.toLowerCase() ?? "";
+            if (/^(png|jpe?g|svg|webp|avif|gif|ico)$/.test(ext)) return "images/[name].[ext]";
+            if (/^(woff2?|ttf|eot|otf)$/.test(ext)) return "fonts/[name].[ext]";
+            if (ext === "css") return "css/[name].[ext]";
+            return "[name].[ext]";
           },
           manualChunks(id) {
-            if (id.includes('node_modules')) {
-              if (id.includes('@nutui/nutui') || (id.includes('@nutui') && !id.includes('@nutui/icons'))) return 'nutui';
-              if (
-                id.includes('/codemirror/') ||
-                id.includes('@codemirror/') ||
-                id.includes('@lezer/') ||
-                id.includes('@replit/codemirror') ||
-                id.includes('js-beautify')
-              ) return 'editor';
-              if (id.includes('vue-i18n') || id.includes('@intlify/')) return 'i18n';
-              if (id.includes('@fortawesome/')) return 'icons';
-              if (id.includes('@vuepic/vue-datepicker')) return 'datepicker';
-              if (id.includes('/vue/') || id.includes('/vue-router/') || id.includes('/pinia/') || id.includes('@vue/') || id.includes('@vueuse/')) return 'vue-vendor';
+            if (id.includes("node_modules")) {
+              if (id.includes("@nutui/nutui") || (id.includes("@nutui") && !id.includes("@nutui/icons"))) return "nutui";
+              if (id.includes("/codemirror/") || id.includes("@codemirror/") || id.includes("@lezer/") || id.includes("@replit/codemirror") || id.includes("js-beautify")) return "editor";
+              if (id.includes("vue-i18n") || id.includes("@intlify/")) return "i18n";
+              if (id.includes("@fortawesome/")) return "icons";
+              if (id.includes("@vuepic/vue-datepicker")) return "datepicker";
+              if (id.includes("/vue/") || id.includes("/vue-router/") || id.includes("/pinia/") || id.includes("@vue/") || id.includes("@vueuse/")) return "vue-vendor";
             }
           },
         },

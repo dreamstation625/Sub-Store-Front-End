@@ -162,10 +162,6 @@
         </nut-button>
       </div>
       <div class="sub-item-swipe-btn-wrapper">
-        <!-- <a
-          :href="`${host}/api/wholeFile/${encodeURIComponent(name)}?raw=1`"
-          target="_blank"
-        > -->
         <nut-button
           shape="square"
           type="success"
@@ -272,6 +268,7 @@
   import clashmetaIcon from '@/assets/icons/clashmeta_color.png';
   import { isMihomoConfigFileType } from "@/utils/fileType";
   import { formatPreviewError } from "@/utils/previewError";
+  import { downloadBlobResponse } from '@/utils/download';
 
   const { copy, isSupported } = useClipboard();
   const { toClipboard: copyFallback } = useV3Clipboard();
@@ -476,10 +473,6 @@
     }
   };
 
-  const swipeClose = () => {
-    swipe.value.close();
-  };
-
   const swipeController = () => {
     if (swipeIsOpen.value) {
       swipe.value.close();
@@ -620,10 +613,26 @@
     return env.value?.feature?.share;
   });
 
-  const onClickExportFile = (name) => {
-    const url = `${host.value}/api/wholeFile/${encodeURIComponent(name)}?raw=1`;
-    console.log('url', url);
-    window.open(url, '_blank');  // 在新窗口中打开链接
+  const onClickExportFile = async (name: string) => {
+    Toast.loading(t('subPage.exportConfigNotify.loading'), { id: 'exportConfig' });
+    try {
+      downloadBlobResponse(
+        await filesApi.exportFile(name),
+        `sub-store_file_${name}.json`,
+      );
+      showNotify({ title: t('subPage.exportConfigNotify.succeed') });
+    } catch (e) {
+      console.error(e);
+      showNotify({
+        type: 'danger',
+        title: t('subPage.exportConfigNotify.failed', {
+          e: e instanceof Error ? e.message : e,
+        }),
+      });
+    } finally {
+      Toast.hide('exportConfig');
+      closeExpandedMenu();
+    }
   };
 
   const onClickShareLink = async () => {

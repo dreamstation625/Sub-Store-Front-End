@@ -19,6 +19,16 @@
         >
         <label for="prettyYaml">{{ prettyYamlLabel }}</label>
       </div>
+      <div class="preview-option-item">
+        <input
+          type="checkbox"
+          id="displayPreviewInWebPage"
+          name="displayPreviewInWebPage"
+          :checked="appearanceSetting.displayPreviewInWebPage"
+          @change="setDisplayPreviewInWebPage"
+        >
+        <label for="displayPreviewInWebPage">{{ displayPreviewInWebPageLabel }}</label>
+      </div>
     </div>
     <ul class="preview-list">
       <li v-for="platform in platformList" :key="platform.name">
@@ -104,6 +114,7 @@
     tipsOkText,
     includeUnsupportedProxyLabel,
     prettyYamlLabel,
+    displayPreviewInWebPageLabel,
   } = defineProps<{
     name: string;
     displayName?: string;
@@ -113,6 +124,7 @@
     desc: string;
     includeUnsupportedProxyLabel: string;
     prettyYamlLabel: string;
+    displayPreviewInWebPageLabel: string;
     url?: string;
     tipsTitle?: string;
     tipsContent?: string;
@@ -158,6 +170,20 @@
   watch(prettyYaml, (value) => {
     setLocalStorageBoolean(PREVIEW_PRETTY_YAML_KEY, value);
   });
+  const setDisplayPreviewInWebPage = async (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    try {
+      await changeAppearanceSetting({
+        appearanceSetting: {
+          displayPreviewInWebPage: input.checked,
+        },
+      });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      input.checked = appearanceSetting.value.displayPreviewInWebPage;
+    }
+  };
   const buildUrlWithQuery = (url: string, query: Record<string, string | boolean>): string => {
     if (!url) {
       return '';

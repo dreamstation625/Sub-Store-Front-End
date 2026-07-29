@@ -270,7 +270,8 @@ export default {
       },
     },
     copyNotify: {
-      succeed: '复制订阅链接成功\n请导入代理工具使用',
+      succeed: '复制链接成功\n使用同步功能可不泄露路径',
+      succeedWithShare: '复制链接成功\n使用分享/同步功能可不泄露路径',
       failed: '复制订阅链接失败\n{e}',
     },
     copyConfigNotify: {
@@ -476,7 +477,7 @@ export default {
           label: '透传单条订阅流量信息',
           tips: {
             title: '透传单条订阅流量信息',
-            content: '默认透传第一个单条订阅流量信息。\n\n若需要合并组合订阅中所有单条订阅的流量，可使用脚本 https://t.me/zhetengsha/3070',
+            content: '默认透传第一个单条订阅流量信息。\n\n若需要合并组合订阅中所有单条订阅的流量，可使用脚本 https://telegram.me/zhetengsha/3070',
             okText: '查看',
           },
         },
@@ -700,6 +701,7 @@ export default {
             'mieru',
             'sudoku',
             'MASQUE',
+            'Shadow QUIC',
             'NaïveProxy',
             'AnyTLS',
             'TrustTunnel',
@@ -868,6 +870,19 @@ export default {
     cacheConfig: "缓存配置",
     frontEndConfig: "前端配置",
     githubConfig: 'GitHub 配置',
+    downloadTokenStrategy: {
+      label: '下载时 Token',
+      ask: '每次询问（默认）',
+      overwrite: '覆盖 Token',
+      keep: '保留当前 Token',
+      dialog: {
+        title: 'Token 处理',
+        content: '保留当前 Token 需要后端 >= 2.19.83',
+        doNotAskAgain: '不再询问（可在 GitHub 配置中修改）',
+        overwrite: '覆盖 Token',
+        keep: '保留当前 Token',
+      },
+    },
     logsTitle: '后端日志',
     storage: {
       gist: {
@@ -1046,7 +1061,7 @@ export default {
         label: '上传产物',
         tips: {
           title: '上传产物',
-          content: '后端需 >= 2.23.16\n\n开启后，定时同步会在生成产物后上传到当前同步仓库（如 Gist）。\n\n关闭后，定时同步只执行产物生成并更新上次执行时间，不上传，也不会生成新的 Gist 链接。适合刷新缓存，或在订阅/文件脚本中执行自己的上传、备份逻辑，例如上传到其他 Gist，或通过 WebDAV 备份/恢复数据。\n\n参考:\nhttps://t.me/zhetengsha/1428\nhttps://t.me/zhetengsha/5261',
+          content: '后端需 >= 2.23.16\n\n开启后，定时同步会在生成产物后上传到当前同步仓库（如 Gist）。\n\n关闭后，定时同步只执行产物生成并更新上次执行时间，不上传，也不会生成新的 Gist 链接。适合刷新缓存，或在订阅/文件脚本中执行自己的上传、备份逻辑，例如上传到其他 Gist，或通过 WebDAV 备份/恢复数据。\n\n参考:\nhttps://telegram.me/zhetengsha/1428\nhttps://telegram.me/zhetengsha/5261',
         },
       },
       cron: {
@@ -1337,7 +1352,8 @@ export default {
     apiSettingTitle: '后端管理',
     apiSettingDesc0: `1. 后端地址为 https://api.com 时, 将尝试请求 https://api.com/api/utils/env 验证后端可用性. 当无法添加后端地址时, 可先尝试访问此地址`,
     apiSettingDesc1: `2. HTTPS 前端无法请求非本地的 HTTP 后端(部分浏览器上也无法访问本地 HTTP 后端). 请配置反代或在局域网自建 HTTP 前端. `,
-    apiSettingDesc2: `3. 添加后端服务器地址，例如 服务器/NAS/Android/云平台 上搭建的后端服务。可以查看小一佬的后端搭建教程：`,
+    apiSettingDesc2: `3. 添加后端服务器地址，例如 服务器/NAS/Android/云平台 上搭建的后端服务。请查看 `,
+    apiSettingWiki: `Wiki#安装`,
     currentApi: {
       title: '当前后端',
     },

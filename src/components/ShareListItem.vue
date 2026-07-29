@@ -403,9 +403,10 @@ const onClickPreviews = () => {
       type: "share",
       url,
       general: t("subPage.panel.general"),
-      notify: t("subPage.copyNotify.succeed"),
+      notify: t("subPage.copyNotify.succeedWithShare"),
       includeUnsupportedProxyLabel: t("subPage.panel.options.includeUnsupportedProxy"),
       prettyYamlLabel: t("subPage.panel.options.prettyYaml"),
+      displayPreviewInWebPageLabel: t("moreSettingPage.displayPreviewInWebPage"),
       tipsTitle: t("subPage.panel.tips.title"),
       tipsContent: `${t("subPage.panel.tips.content")}\n${t(
         "syncPage.addArtForm.includeUnsupportedProxy.tips.content",
