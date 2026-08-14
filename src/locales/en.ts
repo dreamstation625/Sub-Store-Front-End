@@ -294,6 +294,7 @@ export default {
       options: {
         includeUnsupportedProxy: "Unsupported protocols",
         prettyYaml: "Readable YAML",
+        noFlow: "Do not query subscription traffic info",
       },
       tips: {
         ok: "View Document",
@@ -480,6 +481,9 @@ export default {
           label: "User-Agent",
           placeholder: "The User-Agent for downloading resource(s)",
           placeholderDisabled: 'Disable custom UA when passing through',
+        },
+        noFlow: {
+          label: "Do not query subscription traffic info",
         },
         subUserinfo: {
           label: "Subscription-Userinfo",
@@ -684,6 +688,7 @@ export default {
             'TrustTunnel',
             'OpenVPN',
             'GOST Relay',
+            'ZeroTier',
             'Tailscale',
             "WireGuard",
             "SSH",

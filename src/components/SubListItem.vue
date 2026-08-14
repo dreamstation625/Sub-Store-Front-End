@@ -488,6 +488,12 @@ const simpleCollectionDetailLine = computed(() => {
 
 const flow = computed(() => {
   if (props.type === "sub") {
+    if (props.sub.noFlow) {
+      return {
+        firstLine: t("subPage.subItem.noFlow"),
+        secondLine: ``,
+      };
+    }
     const urlList = Object.keys(flows.value);
     const localOnly =
       props.sub.source === "local" &&
@@ -869,6 +875,7 @@ const openPreviewPanel = () => {
       notify: t(`subPage.copyNotify.${shareBtnVisible.value ? "succeedWithShare" : "succeed"}`),
       includeUnsupportedProxyLabel: t("subPage.panel.options.includeUnsupportedProxy"),
       prettyYamlLabel: t("subPage.panel.options.prettyYaml"),
+      noFlowLabel: t("subPage.panel.options.noFlow"),
       displayPreviewInWebPageLabel: t("moreSettingPage.displayPreviewInWebPage"),
       tipsTitle: t(`subPage.panel.tips.title`),
       tipsContent: `${t("subPage.panel.tips.content")}\n${t(

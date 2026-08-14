@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="page-wrapper" @click="handleEditGlobalClick">
     <div
       v-if="editorTabsEnabled"
@@ -258,6 +258,16 @@
           </nut-form-item>
 
           <nut-form-item
+            :label="$t(`editorPage.subConfig.basic.noFlow.label`)"
+            prop="noFlow"
+            class="ignore-failed-wrapper"
+          >
+            <div class="switch-wrapper">
+              <nut-switch v-model="form.noFlow" />
+            </div>
+          </nut-form-item>
+
+          <nut-form-item
             :label="$t(`editorPage.subConfig.basic.subUserinfo.label`)"
             prop="subUserinfo"
           >
@@ -454,6 +464,15 @@
               </draggable>
             </nut-checkboxgroup>
           </div>
+            <nut-form-item
+              :label="$t(`editorPage.subConfig.basic.noFlow.label`)"
+              prop="noFlow"
+              class="ignore-failed-wrapper"
+            >
+              <div class="switch-wrapper">
+                <nut-switch v-model="form.noFlow" />
+              </div>
+            </nut-form-item>
             <nut-form-item
               :label="$t(`editorPage.subConfig.basic.subUserinfo.label`)"
               prop="subUserinfo"
@@ -749,6 +768,7 @@ const SUB_EDITOR_PROP_TO_TAB: Partial<Record<string, SubEditorTab>> = {
   content: "content",
   passThroughUA: "content",
   ua: "content",
+  noFlow: "content",
   subUserinfo: "content",
   proxy: "content",
   relayNodeId: "content",
@@ -1080,6 +1100,7 @@ const form = reactive<any>({
   ignoreFailedRemoteSub: false,
   passThroughUA: false,
   relayNodeId: "",
+  noFlow: undefined,
   icon: "",
   isIconColor: true,
   iconFit: undefined,
@@ -1149,6 +1170,7 @@ watchEffect(() => {
   form.iconFit = normalizeOptionalImageFit(sourceData.iconFit);
   form.editorLanguage = sourceData.editorLanguage;
   form.process = newProcess;
+  form.noFlow = sourceData.noFlow;
   form.subUserinfo = sourceData.subUserinfo;
   form.proxy = sourceData.proxy;
   form.tag = Array.isArray(sourceData.tag)

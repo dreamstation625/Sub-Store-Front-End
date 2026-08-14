@@ -81,6 +81,7 @@
         'trusttunnel',
         'openvpn',
         'gost-relay',
+        'zerotier',
         'tailscale',
         'wireguard',
         'ssh',

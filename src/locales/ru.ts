@@ -283,7 +283,8 @@ export default {
       "general": "Общие",
       "options": {
         "includeUnsupportedProxy": "Неподдерживаемые протоколы",
-        "prettyYaml": "Читаемый YAML"
+        "prettyYaml": "Читаемый YAML",
+        "noFlow": "Не запрашивать информацию о трафике"
       },
       "tips": {
         "ok": "Документация",
@@ -458,6 +459,9 @@ export default {
           "label": "User-Agent",
           "placeholder": "User-Agent для скачивания ресурсов",
           "placeholderDisabled": "Пользовательский UA отключен при сквозной передаче"
+        },
+        "noFlow": {
+          "label": "Не запрашивать информацию о трафике"
         },
         "subUserinfo": {
           "label": "Данные подписки в заголовке",
@@ -681,6 +685,7 @@ export default {
             "TrustTunnel",
             "OpenVPN",
             "GOST Relay",
+            'ZeroTier',
             "Tailscale",
             "WireGuard",
             "SSH",

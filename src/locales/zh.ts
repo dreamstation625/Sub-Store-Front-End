@@ -289,6 +289,7 @@ export default {
       options: {
         includeUnsupportedProxy: '含不支持的协议',
         prettyYaml: '更易读的 YAML',
+        noFlow: '不查询订阅流量信息',
       },
       tips: {
         ok: '查看文档',
@@ -468,6 +469,9 @@ export default {
           label: 'User-Agent',
           placeholder: '下载时使用的 UA，不填使用默认',
           placeholderDisabled: '透传时禁用自定义 UA',
+        },
+        noFlow: {
+          label: '不查询订阅流量信息',
         },
         subUserinfo: {
           label: '订阅流量信息',
@@ -707,6 +711,7 @@ export default {
             'TrustTunnel',
             'OpenVPN',
             'GOST Relay',
+            'ZeroTier',
             'Tailscale',
             'WireGuard',
             'SSH',

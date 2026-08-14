@@ -406,6 +406,7 @@ const onClickPreviews = () => {
       notify: t("subPage.copyNotify.succeedWithShare"),
       includeUnsupportedProxyLabel: t("subPage.panel.options.includeUnsupportedProxy"),
       prettyYamlLabel: t("subPage.panel.options.prettyYaml"),
+      noFlowLabel: t("subPage.panel.options.noFlow"),
       displayPreviewInWebPageLabel: t("moreSettingPage.displayPreviewInWebPage"),
       tipsTitle: t("subPage.panel.tips.title"),
       tipsContent: `${t("subPage.panel.tips.content")}\n${t(
