@@ -349,6 +349,43 @@
               />
             </nut-form-item>
             <nut-form-item
+              v-if="fileSourceMode === 'remote'"
+              :label="'\u8fdc\u7aef\u62c9\u53d6\u8282\u70b9'"
+              prop="relayNodeId"
+            >
+              <nut-input
+                :model-value="selectedWssRelayClientLabel"
+                :border="false"
+                class="nut-input-text"
+                readonly
+                input-align="right"
+                right-icon="rect-right"
+                @click="openWssRelayClientPicker"
+                @click-right-icon="openWssRelayClientPicker"
+              />
+            </nut-form-item>
+            <nut-form-item
+              v-if="fileSourceMode === 'remote'"
+              :label="'WSS \u8fde\u63a5 Token'"
+            >
+              <div class="wss-relay-token-status">
+                <nut-tag
+                  plain
+                  :type="wssRelayTokenInitialized ? 'primary' : 'warning'"
+                >
+                  {{ wssRelayTokenStatusLabel }}
+                </nut-tag>
+                <button
+                  type="button"
+                  class="wss-relay-refresh-btn"
+                  :title="'\u5237\u65b0 WSS \u8fde\u63a5\u72b6\u6001'"
+                  @click="refreshWssRelayPanel"
+                >
+                  <nut-icon name="refresh" />
+                </button>
+              </div>
+            </nut-form-item>
+            <nut-form-item
               :label="$t(`editorPage.subConfig.basic.proxy.label`)"
               prop="proxy"
             >
@@ -517,6 +554,19 @@
     :ok-text="$t(`editorPage.subConfig.sourceNamePicker.confirm`)"
     @confirm="handleFileFailureModeConfirm"
   />
+  <DesktopPicker
+    v-model="selectedWssRelayClientValue"
+    v-model:visible="showWssRelayClientPicker"
+    :columns="wssRelayClientColumns"
+    :title="'\u8fdc\u7aef\u62c9\u53d6\u8282\u70b9'"
+    :cancel-text="$t('editorPage.subConfig.sourceNamePicker.cancel')"
+    :ok-text="$t('editorPage.subConfig.sourceNamePicker.confirm')"
+    @confirm="handleWssRelayClientConfirm"
+  >
+    <p v-if="wssRelayClientColumns.length <= 1">
+      {{ "\u8bf7\u5148\u5728\u8bbe\u7f6e\u9875\u521d\u59cb\u5316 WSS \u8fde\u63a5 Token" }}
+    </p>
+  </DesktopPicker>
   <tag-popup
     v-model:visible="tagPopupVisible"
     ref="tagPopupRef"
@@ -532,6 +582,7 @@ import logoIcon from "@/assets/icons/logo.png";
 import logoRedIcon from "@/assets/icons/logo-red.png";
 import { useSubsApi } from "@/api/subs";
 import { useFilesApi } from "@/api/files";
+import { useSettingsApi, type WssRelayClient } from "@/api/settings";
 import { usePopupRoute } from "@/hooks/usePopupRoute";
 import { useAppNotifyStore } from "@/store/appNotify";
 import { useGlobalStore } from "@/store/global";
@@ -586,6 +637,7 @@ const cmStore = useCodeStore();
 const { t, locale } = useI18n();
 const route = useRoute();
 const router = useRouter();
+const WSS_RELAY_TOKEN_STORAGE_KEY = "wss-relay-token";
 const FILE_EDITOR_TAB_STORAGE_KEY = "file-editor-active-tab";
 const FILE_EDITOR_TABS = ["display", "content", "actions"] as const;
 type FileEditorTab = (typeof FILE_EDITOR_TABS)[number];
@@ -607,6 +659,7 @@ const FILE_EDITOR_PROP_TO_TAB: Partial<Record<string, FileEditorTab>> = {
   url: "content",
   content: "content",
   ua: "content",
+  relayNodeId: "content",
   proxy: "content",
   mergeSources: "content",
   download: "content",
@@ -615,6 +668,7 @@ const FILE_EDITOR_PROP_TO_TAB: Partial<Record<string, FileEditorTab>> = {
 };
 const subsApi = useSubsApi();
 const filesApi = useFilesApi();
+const settingsApi = useSettingsApi();
 const configName = route.params.id as string;
 const subsStore = useSubsStore();
 const { showNotify } = useAppNotifyStore();
@@ -788,6 +842,7 @@ const form = reactive<any>({
   source: "local",
   sourceType: "collection",
   sourceName: "",
+  relayNodeId: "",
   mode: "config",
   includeUnsupportedProxy: false,
   process: [],
@@ -820,6 +875,94 @@ const showFileSourceFields = computed(() => {
 const fileSourceMode = computed(() => {
   return isMihomoConfigFile.value ? form.sourceType : form.source;
 });
+const wssRelayTokenInitialized = ref<boolean | null>(null);
+const wssRelayStatusLoading = ref(false);
+const wssRelayClients = ref<WssRelayClient[]>([]);
+const showWssRelayClientPicker = ref(false);
+const selectedWssRelayClientValue = ref<string[]>([""]);
+const getStoredWssRelayToken = () => (
+  localStorage.getItem(WSS_RELAY_TOKEN_STORAGE_KEY)
+    || localStorage.getItem("wss-relay-admin-token")
+    || ""
+).trim();
+const wssRelayTokenStatusLabel = computed(() => {
+  if (wssRelayStatusLoading.value) return "\u6b63\u5728\u68c0\u67e5...";
+  if (wssRelayTokenInitialized.value === true) return "\u540e\u7aef\u5df2\u521d\u59cb\u5316";
+  if (wssRelayTokenInitialized.value === false) return "\u540e\u7aef\u672a\u521d\u59cb\u5316";
+  return "\u70b9\u51fb\u5237\u65b0\u68c0\u67e5";
+});
+const refreshWssRelayStatus = async () => {
+  wssRelayStatusLoading.value = true;
+  try {
+    const res = await settingsApi.getSettings();
+    if (res?.data?.status === "success") {
+      wssRelayTokenInitialized.value = Boolean(res.data.data?.wssRelayToken);
+    }
+  } finally {
+    wssRelayStatusLoading.value = false;
+  }
+};
+const wssRelayClientColumns = computed(() => [
+  { text: "\u672c\u673a\u62c9\u53d6", value: "" },
+  ...wssRelayClients.value.map((client) => ({
+    text: client.pendingCount
+      ? `${client.name || client.id} (${client.pendingCount} pending)`
+      : client.name || client.id,
+    value: client.id,
+  })),
+]);
+const selectedWssRelayClientLabel = computed(() => {
+  const relayNodeId = form.relayNodeId || "";
+  if (!relayNodeId) return "\u672c\u673a\u62c9\u53d6";
+  return wssRelayClientColumns.value.find((item) => item.value === relayNodeId)?.text
+    || relayNodeId;
+});
+const fetchWssRelayClients = async () => {
+  const token = getStoredWssRelayToken();
+  if (!token) {
+    wssRelayClients.value = [];
+    Toast.warn("\u8bf7\u5148\u5728\u8bbe\u7f6e\u9875\u521d\u59cb\u5316 WSS \u8fde\u63a5 Token");
+    return;
+  }
+  const res = await settingsApi.getWssRelayClients(token);
+  if (res?.data?.status !== "success") return;
+
+  const responseData = res.data.data;
+  const clients = Array.isArray(responseData)
+    ? responseData
+    : Array.isArray(responseData?.clients)
+      ? responseData.clients
+      : [];
+  wssRelayClients.value = clients.filter((client: WssRelayClient) => client?.id);
+  Toast.text(`\u5df2\u5237\u65b0 ${wssRelayClients.value.length} \u4e2a\u5728\u7ebf\u8282\u70b9`);
+};
+const refreshWssRelayPanel = async () => {
+  await refreshWssRelayStatus();
+  await fetchWssRelayClients();
+};
+const openWssRelayClientPicker = async () => {
+  selectedWssRelayClientValue.value = [form.relayNodeId || ""];
+  if (wssRelayClients.value.length === 0) {
+    await refreshWssRelayPanel();
+  }
+  showWssRelayClientPicker.value = true;
+};
+const handleWssRelayClientConfirm = ({ selectedValue }: { selectedValue?: unknown[] }) => {
+  form.relayNodeId = typeof selectedValue?.[0] === "string" ? selectedValue[0] : "";
+  showWssRelayClientPicker.value = false;
+};
+const normalizeRelayNodeId = (data: any) => {
+  const sourceMode = isMihomoConfigFileType(data.type)
+    ? data.sourceType
+    : data.source;
+  const relayNodeId = `${data.relayNodeId || ""}`.trim();
+  if (sourceMode === "remote" && relayNodeId) {
+    data.relayNodeId = relayNodeId;
+  } else {
+    delete data.relayNodeId;
+  }
+};
+void refreshWssRelayStatus();
 const showIncludeUnsupportedProxy = computed(() => {
   return (
     isMihomoConfigFile.value &&
@@ -911,6 +1054,7 @@ watchEffect(() => {
     form.type = fileType;
     form.sourceType = normalizeFormSourceType(sourceData, fileType);
     form.sourceName = sourceData.sourceName;
+    form.relayNodeId = sourceData.relayNodeId || "";
     form.mode = sourceData.mode || 'config';
     form.includeUnsupportedProxy = sourceData.includeUnsupportedProxy === true;
     form.url = sourceData.url;
@@ -1047,6 +1191,7 @@ const fetchPreviewData = async () => {
       }
     });
     normalizeProcessByFileType(data);
+    normalizeRelayNodeId(data);
     const res = await subsApi.compareSub("file", data);
     if (res?.data?.status === "success") {
       previewData.value = res.data.data;
@@ -1134,6 +1279,7 @@ const submit = () => {
     data["display-name"] = data.displayName;
     data.process = actionsToProcess(data.process, actionsList, ignoreList);
     normalizeProcessByFileType(data);
+    normalizeRelayNodeId(data);
     if (data.ignoreFailedRemoteFile === "disabled"){
       data.ignoreFailedRemoteFile = false;
     }
@@ -1485,6 +1631,36 @@ const handleEditGlobalClick = () => {
   .switch-wrapper {
     display: flex;
     justify-content: end;
+  }
+}
+
+.wss-relay-token-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
+}
+
+.wss-relay-refresh-btn {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--primary-color);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  :deep(.nut-icon) {
+    font-size: 16px;
+  }
+
+  &:hover,
+  &:focus-visible {
+    background: var(--divider-color);
   }
 }
 
