@@ -981,10 +981,11 @@ const selectedWssRelayClientLabel = computed(() => {
   if (!relayNodeId) return "本机拉取";
   return wssRelayClientColumns.value.find((item) => item.value === relayNodeId)?.text || relayNodeId;
 });
-const fetchWssRelayClients = async () => {
+const fetchWssRelayClients = async (notify = true) => {
   const token = getStoredWssRelayToken();
   if (!token) {
     wssRelayClients.value = [];
+    if (!notify) return;
     Toast.warn("请先在设置页初始化 WSS 连接 Token");
     return;
   }
@@ -998,6 +999,7 @@ const fetchWssRelayClients = async () => {
       ? responseData.clients
       : [];
   wssRelayClients.value = clients.filter((client: WssRelayClient) => client?.id);
+  if (!notify) return;
   Toast.text("已刷新 " + wssRelayClients.value.length + " 个在线节点");
 };
 const refreshWssRelayPanel = async () => {
@@ -1016,6 +1018,7 @@ const handleWssRelayClientConfirm = ({ selectedValue }: { selectedValue?: unknow
   showWssRelayClientPicker.value = false;
 };
 void refreshWssRelayStatus();
+void fetchWssRelayClients(false);
   const subFailureModeOptions = computed(() => {
     const prefix = "editorPage.subConfig.basic.ignoreFailedRemoteSub";
     return [

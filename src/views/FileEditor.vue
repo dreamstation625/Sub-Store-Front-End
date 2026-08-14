@@ -917,10 +917,11 @@ const selectedWssRelayClientLabel = computed(() => {
   return wssRelayClientColumns.value.find((item) => item.value === relayNodeId)?.text
     || relayNodeId;
 });
-const fetchWssRelayClients = async () => {
+const fetchWssRelayClients = async (notify = true) => {
   const token = getStoredWssRelayToken();
   if (!token) {
     wssRelayClients.value = [];
+    if (!notify) return;
     Toast.warn("\u8bf7\u5148\u5728\u8bbe\u7f6e\u9875\u521d\u59cb\u5316 WSS \u8fde\u63a5 Token");
     return;
   }
@@ -934,6 +935,7 @@ const fetchWssRelayClients = async () => {
       ? responseData.clients
       : [];
   wssRelayClients.value = clients.filter((client: WssRelayClient) => client?.id);
+  if (!notify) return;
   Toast.text(`\u5df2\u5237\u65b0 ${wssRelayClients.value.length} \u4e2a\u5728\u7ebf\u8282\u70b9`);
 };
 const refreshWssRelayPanel = async () => {
@@ -963,6 +965,7 @@ const normalizeRelayNodeId = (data: any) => {
   }
 };
 void refreshWssRelayStatus();
+void fetchWssRelayClients(false);
 const showIncludeUnsupportedProxy = computed(() => {
   return (
     isMihomoConfigFile.value &&
