@@ -389,8 +389,11 @@ export default {
         subInfoUrl: {
           label: "Sub Info URL",
           placeholder: "URL for fetching subscription usage info(supports headers etc.)",
+          autoPlaceholder: "Leave blank to use the current source URL, or enter an override",
           tips: {
             title: "Sub Info URL",
+            autoContent:
+              "For a mihomo config sourced from a single subscription or remote config, leave this blank to use the current source URL automatically. A value entered here takes precedence.",
             content:
               'Fill in the URL used to fetch subscription usage info. The response body, or response headers subscription-userinfo/profile-web-page-url/plan-name, will be used as the file usage info.\n\nSupported parameters:\nheaders: custom request headers(single-line JSON string)\ninsecure: do not verify the server certificate\nnoCache: do not use cache\nheadersCacheTtl: headers cache ttl(seconds)\n\nExample: http://a.com/userinfo#headers=%7B%22Authorization%22%3A%22Bearer%20token%22%7D',
           },

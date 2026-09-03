@@ -429,7 +429,7 @@
               class="nut-input-text"
               data-1p-ignore
               v-model.trim="form.subInfoUrl"
-              :placeholder="$t(`editorPage.subConfig.basic.subInfoUrl.placeholder`)"
+              :placeholder="subInfoUrlPlaceholder"
               type="text"
               input-align="right"
               left-icon="tips"
@@ -857,6 +857,25 @@ const mihomoConfigSourceTypes = [
   "none",
 ];
 const isMihomoConfigFile = computed(() => isMihomoConfigFileType(form.type));
+const isAutoSubInfoUrlSource = computed(
+  () =>
+    isMihomoConfigFile.value &&
+    ["subscription", "remote"].includes(form.sourceType),
+);
+const subInfoUrlPlaceholder = computed(() =>
+  t(
+    `editorPage.subConfig.basic.subInfoUrl.${
+      isAutoSubInfoUrlSource.value ? "autoPlaceholder" : "placeholder"
+    }`,
+  ),
+);
+const subInfoUrlTipsContent = computed(() => {
+  const content = t("editorPage.subConfig.basic.subInfoUrl.tips.content");
+  if (!isAutoSubInfoUrlSource.value) return content;
+  return `${t(
+    "editorPage.subConfig.basic.subInfoUrl.tips.autoContent",
+  )}\n\n${content}`;
+});
 const isMihomoConfigFileSource = computed(() => {
   return isMihomoConfigFile.value && mihomoConfigFileSourceTypes.includes(form.sourceType);
 });
@@ -1339,7 +1358,7 @@ const includeUnsupportedProxyTips = () => {
 const subInfoUrlTips = () => {
   Dialog({
     title: t(`editorPage.subConfig.basic.subInfoUrl.tips.title`),
-    content: t(`editorPage.subConfig.basic.subInfoUrl.tips.content`),
+    content: subInfoUrlTipsContent.value,
     popClass: "auto-dialog",
     textAlign: "left",
     okText: "OK",

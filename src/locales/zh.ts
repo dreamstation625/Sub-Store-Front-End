@@ -384,8 +384,10 @@ export default {
         subInfoUrl: {
           label: '查询流量信息订阅链接',
           placeholder: '用于查询流量信息的订阅链接(支持 headers 等参数)',
+          autoPlaceholder: '留空则自动使用当前来源链接，填写则覆盖',
           tips: {
             title: '查询流量信息订阅链接',
+            autoContent: 'mihomo 配置使用单条订阅或远程配置来源时，留空将自动使用当前来源链接；手动填写后以此处链接为准。',
             content: '填写用于查询流量信息的链接, 会使用响应体内容或响应头 subscription-userinfo/profile-web-page-url/plan-name 作为文件的流量信息.\n\n支持参数:\nheaders: 自定义请求头(单行 JSON 字符串)\ninsecure: 不验证服务器证书\nnoCache: 不使用缓存\nheadersCacheTtl: 响应头缓存时长(秒)\n\n例: http://a.com/userinfo#headers=%7B%22Authorization%22%3A%22Bearer%20token%22%7D',
           },
         },
