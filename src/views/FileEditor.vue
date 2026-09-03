@@ -915,7 +915,17 @@ const refreshWssRelayStatus = async () => {
   try {
     const res = await settingsApi.getSettings();
     if (res?.data?.status === "success") {
-      wssRelayTokenInitialized.value = Boolean(res.data.data?.wssRelayToken);
+      const backendToken = res.data.data?.wssRelayToken;
+      wssRelayTokenInitialized.value = Boolean(backendToken);
+      if (typeof backendToken === "string" && backendToken !== "***") {
+        const token = backendToken.trim();
+        if (token) {
+          localStorage.setItem(WSS_RELAY_TOKEN_STORAGE_KEY, token);
+          localStorage.removeItem("wss-relay-admin-token");
+        } else {
+          localStorage.removeItem(WSS_RELAY_TOKEN_STORAGE_KEY);
+        }
+      }
     }
   } finally {
     wssRelayStatusLoading.value = false;
@@ -983,8 +993,7 @@ const normalizeRelayNodeId = (data: any) => {
     delete data.relayNodeId;
   }
 };
-void refreshWssRelayStatus();
-void fetchWssRelayClients(false);
+void refreshWssRelayPanel();
 const showIncludeUnsupportedProxy = computed(() => {
   return (
     isMihomoConfigFile.value &&

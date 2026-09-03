@@ -157,6 +157,10 @@
             </button>
           </div>
         </div>
+        <div v-if="hasLocalWssRelayToken" class="wss-token-value">
+          <span class="wss-token-label">连接 Token</span>
+          <code>{{ wssRelayToken }}</code>
+        </div>
         <div class="wss-token-actions">
           <nut-button
             v-if="wssRelayTokenInitialized === false"
@@ -338,10 +342,10 @@ const wssRelayTokenDescription = computed(() => {
     return '初始化后请立即复制该 Token，并填入 wss-client/config.json 的 token 字段。';
   }
   if (wssRelayTokenInitialized.value === true && !hasLocalWssRelayToken.value) {
-    return '后端已初始化，但当前设备未保存明文 Token；请从已保存的设备或 wss-client 配置中获取。';
+    return '后端已初始化，但未返回明文 Token；请确认后端已更新到支持同步 Token 的版本。';
   }
   if (wssRelayTokenInitialized.value === true) {
-    return '后端已初始化，当前设备已保存可复制的 Token。';
+    return 'Token 已从后端同步，其他设备打开此页面后也可查看和复制。';
   }
   return '点击刷新按钮检查后端初始化状态。';
 });
@@ -362,7 +366,18 @@ const refreshWssRelayStatus = async () => {
       wssRelayTokenInitialized.value = null;
       return;
     }
-    wssRelayTokenInitialized.value = Boolean(res.data.data?.wssRelayToken);
+    const backendToken = res.data.data?.wssRelayToken;
+    wssRelayTokenInitialized.value = Boolean(backendToken);
+    if (typeof backendToken === 'string' && backendToken !== '***') {
+      const token = backendToken.trim();
+      wssRelayToken.value = token;
+      if (token) {
+        localStorage.setItem(WSS_RELAY_TOKEN_STORAGE_KEY, token);
+        localStorage.removeItem('wss-relay-admin-token');
+      } else {
+        localStorage.removeItem(WSS_RELAY_TOKEN_STORAGE_KEY);
+      }
+    }
   } catch {
     if (requestId !== wssRelayStatusRequestId) return;
     wssRelayTokenInitialized.value = null;
@@ -937,6 +952,23 @@ onMounted(() => {
     .wss-token-actions {
       display: flex;
       gap: 12px;
+    }
+
+    .wss-token-value {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      code {
+        padding: 10px 12px;
+        border-radius: 6px;
+        background: var(--divider-color);
+        color: var(--primary-text-color);
+        font-size: 12px;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+        user-select: all;
+      }
     }
 
     .wss-token-desc {

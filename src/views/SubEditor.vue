@@ -958,7 +958,17 @@ const refreshWssRelayStatus = async () => {
     const res = await settingsApi.getSettings();
     if (res?.data?.status !== "success") return;
 
-    wssRelayTokenInitialized.value = Boolean(res.data.data?.wssRelayToken);
+    const backendToken = res.data.data?.wssRelayToken;
+    wssRelayTokenInitialized.value = Boolean(backendToken);
+    if (typeof backendToken === "string" && backendToken !== "***") {
+      const token = backendToken.trim();
+      if (token) {
+        localStorage.setItem(WSS_RELAY_TOKEN_STORAGE_KEY, token);
+        localStorage.removeItem("wss-relay-admin-token");
+      } else {
+        localStorage.removeItem(WSS_RELAY_TOKEN_STORAGE_KEY);
+      }
+    }
   } finally {
     wssRelayStatusLoading.value = false;
   }
@@ -1017,8 +1027,7 @@ const handleWssRelayClientConfirm = ({ selectedValue }: { selectedValue?: unknow
   form.relayNodeId = typeof selectedValue?.[0] === "string" ? selectedValue[0] : "";
   showWssRelayClientPicker.value = false;
 };
-void refreshWssRelayStatus();
-void fetchWssRelayClients(false);
+void refreshWssRelayPanel();
   const subFailureModeOptions = computed(() => {
     const prefix = "editorPage.subConfig.basic.ignoreFailedRemoteSub";
     return [
