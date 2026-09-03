@@ -853,7 +853,8 @@ watch(isSyncOpen, async () => {
 .copy-sub-link {
   background-color: transparent;
   border: none;
-  padding: 0 8px;
+  padding: 11px 6px;
+  margin: -11px 0;
   cursor: pointer;
   display: inline-flex;
   justify-content: center;

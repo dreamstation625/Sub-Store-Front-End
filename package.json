@@ -1,6 +1,6 @@
 {
   "name": "sub-store-front-end",
-  "version": "2.29.10",
+  "version": "2.30.00",
   "private": true,
   "packageManager": "pnpm@11.0.9",
   "scripts": {

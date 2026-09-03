@@ -739,7 +739,8 @@
         .refresh-sub-flow {
           background-color: transparent;
           border: none;
-          padding: 0 6px;
+          padding: 11px 6px;
+          margin: -11px 0;
           cursor: pointer;
           display: inline-flex;
           justify-content: center;
@@ -832,7 +833,8 @@
         .public-link-action,
         .copy-sub-link,
         .refresh-sub-flow {
-          padding: 0 6px;
+          padding: 11px 6px;
+          margin: -11px 0;
         }
 
         .sub-item-detail {
