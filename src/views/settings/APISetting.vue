@@ -134,16 +134,32 @@
 
     <nut-cell-group title="WSS 连接 Token">
       <div class="wss-token-wrapper">
-        <nut-input
-          v-model="wssRelayToken"
-          class="input"
-          placeholder="用于 wss-client 连接主服务"
-          type="password"
-          input-align="left"
-          @blur="saveWssRelayToken"
-        />
+        <div class="wss-token-status-row">
+          <span class="wss-token-label">初始化状态</span>
+          <div class="wss-token-status">
+            <nut-tag
+              plain
+              :type="wssRelayTokenInitialized ? 'primary' : 'warning'"
+            >
+              {{ wssRelayTokenStatusLabel }}
+            </nut-tag>
+            <button
+              type="button"
+              class="wss-token-refresh-btn"
+              title="刷新 WSS 连接状态"
+              :disabled="wssRelayStatusLoading"
+              @click="refreshWssRelayStatus"
+            >
+              <nut-icon
+                name="refresh"
+                :class="{ 'is-loading': wssRelayStatusLoading }"
+              />
+            </button>
+          </div>
+        </div>
         <div class="wss-token-actions">
           <nut-button
+            v-if="wssRelayTokenInitialized === false"
             class="save-btn"
             type="primary"
             :loading="creatingWssRelayToken"
@@ -154,14 +170,14 @@
           <nut-button
             class="save-btn"
             plain
-            :disabled="!wssRelayToken"
+            :disabled="!hasLocalWssRelayToken"
             @click="copyWssRelayToken"
           >
             复制
           </nut-button>
         </div>
       </div>
-      <p class="wss-token-desc">初始化后复制该 Token，填入 wss-client/config.json 的 token 字段。</p>
+      <p class="wss-token-desc">{{ wssRelayTokenDescription }}</p>
     </nut-cell-group>
 
     <nut-cell-group :title="$t(`apiSettingPage.addApi.title`)">
@@ -250,7 +266,7 @@
 
 <script setup lang="ts">
 import { Dialog, Toast } from "@nutui/nutui";
-import { computed, ref, onMounted, watchEffect } from 'vue';
+import { computed, ref, onMounted, watch, watchEffect } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useBackend } from '@/hooks/useBackend';
 import { useHostAPI } from '@/hooks/useHostAPI';
@@ -302,11 +318,33 @@ const shareBaseUrlError = ref('');
 const checkingAPI = ref(false);
 const switchingAPI = ref(false);
 const creatingWssRelayToken = ref(false);
+const wssRelayStatusLoading = ref(false);
+const wssRelayTokenInitialized = ref<boolean | null>(null);
+let wssRelayStatusRequestId = 0;
 const wssRelayToken = ref(
   localStorage.getItem(WSS_RELAY_TOKEN_STORAGE_KEY)
     || localStorage.getItem('wss-relay-admin-token')
     || '',
 );
+const hasLocalWssRelayToken = computed(() => Boolean(wssRelayToken.value.trim()));
+const wssRelayTokenStatusLabel = computed(() => {
+  if (wssRelayStatusLoading.value) return '正在检查...';
+  if (wssRelayTokenInitialized.value === true) return '后端已初始化';
+  if (wssRelayTokenInitialized.value === false) return '后端未初始化';
+  return '状态未知';
+});
+const wssRelayTokenDescription = computed(() => {
+  if (wssRelayTokenInitialized.value === false) {
+    return '初始化后请立即复制该 Token，并填入 wss-client/config.json 的 token 字段。';
+  }
+  if (wssRelayTokenInitialized.value === true && !hasLocalWssRelayToken.value) {
+    return '后端已初始化，但当前设备未保存明文 Token；请从已保存的设备或 wss-client 配置中获取。';
+  }
+  if (wssRelayTokenInitialized.value === true) {
+    return '后端已初始化，当前设备已保存可复制的 Token。';
+  }
+  return '点击刷新按钮检查后端初始化状态。';
+});
 
 const inputType = ref('path');
 const parsedHost = ref('');
@@ -314,12 +352,24 @@ const parsedPath = ref('');
 const previewUrl = ref('');
 const currentOrigin = ref(window.location.origin);
 
-const saveWssRelayToken = () => {
-  const token = wssRelayToken.value.trim();
-  if (token) {
-    localStorage.setItem(WSS_RELAY_TOKEN_STORAGE_KEY, token);
-  } else {
-    localStorage.removeItem(WSS_RELAY_TOKEN_STORAGE_KEY);
+const refreshWssRelayStatus = async () => {
+  const requestId = ++wssRelayStatusRequestId;
+  wssRelayStatusLoading.value = true;
+  try {
+    const res = await settingsApi.getSettings();
+    if (requestId !== wssRelayStatusRequestId) return;
+    if (res?.data?.status !== 'success') {
+      wssRelayTokenInitialized.value = null;
+      return;
+    }
+    wssRelayTokenInitialized.value = Boolean(res.data.data?.wssRelayToken);
+  } catch {
+    if (requestId !== wssRelayStatusRequestId) return;
+    wssRelayTokenInitialized.value = null;
+  } finally {
+    if (requestId === wssRelayStatusRequestId) {
+      wssRelayStatusLoading.value = false;
+    }
   }
 };
 
@@ -335,7 +385,9 @@ const initWssRelayToken = async () => {
     if (!token) return;
 
     wssRelayToken.value = token;
-    saveWssRelayToken();
+    localStorage.setItem(WSS_RELAY_TOKEN_STORAGE_KEY, token);
+    localStorage.removeItem('wss-relay-admin-token');
+    wssRelayTokenInitialized.value = true;
     showNotify({ title: 'WSS 连接 Token 已初始化', type: 'success' });
   } finally {
     creatingWssRelayToken.value = false;
@@ -763,7 +815,13 @@ watchEffect(() => {
   }
 });
 
+watch(currentName, () => {
+  wssRelayTokenInitialized.value = null;
+  void refreshWssRelayStatus();
+}, { flush: 'post' });
+
 onMounted(() => {
+  void refreshWssRelayStatus();
   if (apis.value.length) return;
   try {
     if (localStorage.getItem('api-desc-read')) return;
@@ -825,6 +883,57 @@ onMounted(() => {
       background: var(--card-color);
     }
 
+    .wss-token-status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 28px;
+    }
+
+    .wss-token-label {
+      color: var(--second-text-color);
+      font-size: 14px;
+    }
+
+    .wss-token-status {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .wss-token-refresh-btn {
+      width: 28px;
+      height: 28px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--primary-color);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      &:disabled {
+        cursor: default;
+        opacity: 0.6;
+      }
+
+      &:hover:not(:disabled),
+      &:focus-visible:not(:disabled) {
+        background: var(--divider-color);
+      }
+
+      :deep(.nut-icon) {
+        font-size: 16px;
+      }
+
+      :deep(.nut-icon.is-loading) {
+        animation: wss-token-refresh-spin 0.8s linear infinite;
+      }
+    }
+
     .wss-token-actions {
       display: flex;
       gap: 12px;
@@ -836,6 +945,12 @@ onMounted(() => {
       color: var(--comment-text-color);
       font-size: 12px;
       line-height: 1.5;
+    }
+
+    @keyframes wss-token-refresh-spin {
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     .api-list-item {
