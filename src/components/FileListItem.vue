@@ -11,9 +11,10 @@
     <div
       class="sub-item-wrapper"
       :class="{ 'is-dual-column': props.isDualColumn }"
-      :style="{ padding: itemPadding, '--icon-fit': iconFit }"
+      :style="{ padding: itemPadding, paddingTop: relayNodeId ? `calc(${itemPadding} + 8px)` : itemPadding, '--icon-fit': iconFit }"
       @click="handleContentClick"
     >
+      <WssRelayBadge :node-id="relayNodeId" />
       <div
         @click.stop="previewFile"
         class="sub-img-wrappers"
@@ -266,6 +267,8 @@
   import { useBackend } from "@/hooks/useBackend";
   import clashmetaIcon from '@/assets/icons/clashmeta_color.png';
   import { isMihomoConfigFileType } from "@/utils/fileType";
+  import WssRelayBadge from '@/components/WssRelayBadge.vue';
+  import { getConfiguredRelayNodeId } from '@/utils/wssRelay';
   import { formatPreviewError } from "@/utils/previewError";
   import { downloadBlobResponse } from '@/utils/download';
 
@@ -283,6 +286,11 @@
     disabled?: boolean;
     isDualColumn?: boolean;
   }>();
+  const relayNodeId = computed(() => props.type === 'file'
+    ? getConfiguredRelayNodeId(props.file, isMihomoConfigFileType(props.file?.type)
+      ? props.file?.sourceType
+      : props.file?.source)
+    : '');
   // console.log('props.disabled')
   // console.log(props.disabled)
   let scrollTop = 0;

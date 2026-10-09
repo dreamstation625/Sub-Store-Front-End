@@ -13,7 +13,7 @@ const code = ts.transpileModule(source, {
 const context = { exports: {}, require };
 vm.createContext(context);
 vm.runInContext(code, context);
-const { createWssRelaySession, getWssRelayClientColumns, normalizeRelayNodeId } = context.exports;
+const { createWssRelaySession, getWssRelayClientColumns, normalizeRelayNodeId, getConfiguredRelayNodeId } = context.exports;
 const success = (data) => ({ data: { status: 'success', data } });
 const deferred = () => {
   let resolve;
@@ -155,5 +155,90 @@ test('本机或本地来源明确提交空节点，远端 ID 去除空格', () =
     assert.match(editor, /useWssRelay\(true\)/);
     assert.doesNotMatch(editor, /if \(!data\.relayNodeId\) delete data\.relayNodeId/);
     assert.match(editor, /normalizeRelay(?:NodeId|Selection)\(data,/);
+  }
+});
+
+test('卡片角标仅使用远端来源中保存的节点，忽略本地残留和空节点', () => {
+  assert.equal(getConfiguredRelayNodeId({ relayNodeId: '  nb-1  ' }, 'remote'), 'nb-1');
+  for (const mode of ['local', 'subscription', 'collection', undefined]) {
+    assert.equal(getConfiguredRelayNodeId({ relayNodeId: 'stale-node' }, mode), '');
+  }
+  for (const data of [undefined, {}, { relayNodeId: '' }, { relayNodeId: '   ' }, { relayNodeId: true }]) {
+    assert.equal(getConfiguredRelayNodeId(data, 'remote'), '');
+  }
+});
+
+test('真实卡片的角标计算：订阅、文件及两种 Mihomo 类型按实际来源判断并响应修改', () => {
+  const vue = require('vue');
+  const fileTypeContext = { exports: {} };
+  vm.createContext(fileTypeContext);
+  vm.runInContext(ts.transpileModule(
+    fs.readFileSync(new URL('../src/utils/fileType.ts', import.meta.url), 'utf8'),
+    { compilerOptions: { module: ts.ModuleKind.CommonJS } },
+  ).outputText, fileTypeContext);
+  for (const name of ['SubListItem.vue', 'FileListItem.vue']) {
+    const card = fs.readFileSync(new URL(`../src/components/${name}`, import.meta.url), 'utf8');
+    const calculation = card.match(/const relayNodeId = computed\(\(\) =>[\s\S]*?: ''\);/)?.[0];
+    assert.ok(calculation, `${name} 提供响应式节点判断`);
+    const props = vue.reactive({ type: 'sub', sub: { source: 'remote', relayNodeId: 'nb-1' }, file: {} });
+    const cardContext = {
+      props, computed: vue.computed, getConfiguredRelayNodeId,
+      isMihomoConfigFileType: fileTypeContext.exports.isMihomoConfigFileType,
+    };
+    vm.createContext(cardContext);
+    vm.runInContext(`${calculation}\nglobalThis.node = relayNodeId;`, cardContext);
+    const node = cardContext.node;
+    if (name === 'SubListItem.vue') {
+      assert.equal(node.value, 'nb-1');
+      props.sub.relayNodeId = '';
+      assert.equal(node.value, '');
+      props.sub = { source: 'local', relayNodeId: 'stale' };
+      assert.equal(node.value, '');
+      props.type = 'collection';
+      assert.equal(node.value, '');
+    } else {
+      assert.equal(node.value, '');
+      props.type = 'file';
+      props.file = { type: 'file', source: 'remote', relayNodeId: 'nb-file' };
+      assert.equal(node.value, 'nb-file');
+      for (const type of ['mihomoConfig', 'mihomoProfile']) {
+        props.file = { type, source: 'local', sourceType: 'remote', relayNodeId: 'nb-config' };
+        assert.equal(node.value, 'nb-config');
+        for (const sourceType of ['local', 'subscription', 'collection']) {
+          props.file.sourceType = sourceType;
+          assert.equal(node.value, '');
+        }
+      }
+    }
+  }
+});
+
+test('角标实际组件渲染：小标签、节点提示、安全转义和本机隐藏', async () => {
+  const { parse, compileScript } = require('vue/compiler-sfc');
+  const vue = require('vue');
+  const { renderToString } = require('vue/server-renderer');
+  const badge = fs.readFileSync(new URL('../src/components/WssRelayBadge.vue', import.meta.url), 'utf8');
+  const { descriptor } = parse(badge);
+  const compiled = compileScript(descriptor, { id: 'wss-relay-badge', inlineTemplate: true });
+  const compiledCode = ts.transpileModule(compiled.content, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  const badgeContext = { exports: {}, require };
+  vm.createContext(badgeContext);
+  vm.runInContext(compiledCode, badgeContext);
+  const component = badgeContext.exports.default;
+  const remote = await renderToString(vue.createSSRApp(component, { nodeId: 'node-<test>' }));
+  assert.match(remote, /远端 WS/);
+  assert.match(remote, /不代表在线状态/);
+  assert.match(remote, /node-&lt;test&gt;/);
+  assert.doesNotMatch(remote, /<test>/);
+  const local = await renderToString(vue.createSSRApp(component, { nodeId: '' }));
+  assert.doesNotMatch(local, /wss-relay-badge/);
+  assert.match(descriptor.styles[0].content, /font-size: 9px/);
+  for (const name of ['SubListItem.vue', 'FileListItem.vue']) {
+    const card = fs.readFileSync(new URL(`../src/components/${name}`, import.meta.url), 'utf8');
+    assert.match(card, /<WssRelayBadge :node-id="relayNodeId"/);
+    assert.match(card, /paddingTop: relayNodeId/);
+    assert.match(card, /getConfiguredRelayNodeId/);
   }
 });

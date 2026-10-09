@@ -10,9 +10,10 @@
     <div
       class="sub-item-wrapper"
       :class="{ 'is-dual-column': props.isDualColumn }"
-      :style="{ padding: itemPadding, '--icon-fit': iconFit }"
+      :style="{ padding: itemPadding, paddingTop: relayNodeId ? `calc(${itemPadding} + 8px)` : itemPadding, '--icon-fit': iconFit }"
       @click="handleContentClick"
     >
+      <WssRelayBadge :node-id="relayNodeId" />
       <div
         v-if="
           appearanceSetting.subProgressStyle === 'background' &&
@@ -332,6 +333,8 @@ import { useSubsApi } from "@/api/subs";
 import logoIcon from "@/assets/icons/logo.png";
 import logoRedIcon from "@/assets/icons/logo-red.png";
 import PreviewPanel from "@/components/PreviewPanel.vue";
+import WssRelayBadge from "@/components/WssRelayBadge.vue";
+import { getConfiguredRelayNodeId } from "@/utils/wssRelay";
 import { useBackend } from "@/hooks/useBackend";
 import { useHostAPI } from "@/hooks/useHostAPI";
 import { usePopupRoute } from "@/hooks/usePopupRoute";
@@ -355,6 +358,10 @@ const props = defineProps<{
   isDualColumn?: boolean;
 }>();
 const emit = defineEmits(["update:visible", "share"]);
+
+const relayNodeId = computed(() => props.type === 'sub'
+  ? getConfiguredRelayNodeId(props.sub, props.sub?.source)
+  : '');
 
 const { t } = useI18n();
 

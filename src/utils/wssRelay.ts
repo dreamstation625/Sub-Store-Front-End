@@ -99,3 +99,10 @@ export function normalizeRelayNodeId(data: Record<string, any>, isRemote: boolea
   // PATCH 省略字段表示保留旧值，必须显式提交空字符串才能恢复本机拉取。
   data.relayNodeId = isRemote ? `${data.relayNodeId || ''}`.trim() : '';
 }
+
+// 仅标记当前来源直接配置的远端拉取；本地来源中的历史节点字段不能作为依据。
+export function getConfiguredRelayNodeId(data: { relayNodeId?: string } | undefined, sourceMode?: string) {
+  return sourceMode === 'remote' && typeof data?.relayNodeId === 'string'
+    ? data.relayNodeId.trim()
+    : '';
+}
