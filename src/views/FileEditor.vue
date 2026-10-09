@@ -576,8 +576,8 @@
     :ok-text="$t('editorPage.subConfig.sourceNamePicker.confirm')"
     @confirm="handleWssRelayClientConfirm"
   >
-    <p v-if="wssRelayClientColumns.length <= 1">
-      {{ "\u8bf7\u5148\u5728\u8bbe\u7f6e\u9875\u521d\u59cb\u5316 WSS \u8fde\u63a5 Token" }}
+    <p v-if="wssRelayClients.length === 0">
+      {{ wssRelayTokenInitialized === false ? "请先在设置页初始化 WSS 连接 Token" : "暂无在线节点；已保存的节点选择会保留，请检查客户端连接" }}
     </p>
   </DesktopPicker>
   <tag-popup
@@ -595,7 +595,8 @@ import logoIcon from "@/assets/icons/logo.png";
 import logoRedIcon from "@/assets/icons/logo-red.png";
 import { useSubsApi } from "@/api/subs";
 import { useFilesApi } from "@/api/files";
-import { useSettingsApi, type WssRelayClient } from "@/api/settings";
+import { useWssRelay } from "@/hooks/useWssRelay";
+import { getWssRelayClientColumns, normalizeRelayNodeId as normalizeRelaySelection } from "@/utils/wssRelay";
 import { usePopupRoute } from "@/hooks/usePopupRoute";
 import { useAppNotifyStore } from "@/store/appNotify";
 import { useGlobalStore } from "@/store/global";
@@ -650,7 +651,6 @@ const cmStore = useCodeStore();
 const { t, locale } = useI18n();
 const route = useRoute();
 const router = useRouter();
-const WSS_RELAY_TOKEN_STORAGE_KEY = "wss-relay-token";
 const FILE_EDITOR_TAB_STORAGE_KEY = "file-editor-active-tab";
 const FILE_EDITOR_TABS = ["display", "content", "actions"] as const;
 type FileEditorTab = (typeof FILE_EDITOR_TABS)[number];
@@ -682,7 +682,6 @@ const FILE_EDITOR_PROP_TO_TAB: Partial<Record<string, FileEditorTab>> = {
 };
 const subsApi = useSubsApi();
 const filesApi = useFilesApi();
-const settingsApi = useSettingsApi();
 const configName = route.params.id as string;
 const subsStore = useSubsStore();
 const { showNotify } = useAppNotifyStore();
@@ -909,88 +908,33 @@ const showFileSourceFields = computed(() => {
 const fileSourceMode = computed(() => {
   return isMihomoConfigFile.value ? form.sourceType : form.source;
 });
-const wssRelayTokenInitialized = ref<boolean | null>(null);
-const wssRelayStatusLoading = ref(false);
-const wssRelayClients = ref<WssRelayClient[]>([]);
+const {
+  initialized: wssRelayTokenInitialized,
+  loading: wssRelayStatusLoading,
+  clients: wssRelayClients,
+  refresh: refreshWssRelay,
+} = useWssRelay(true);
 const showWssRelayClientPicker = ref(false);
 const selectedWssRelayClientValue = ref<string[]>([""]);
-const getStoredWssRelayToken = () => (
-  localStorage.getItem(WSS_RELAY_TOKEN_STORAGE_KEY)
-    || localStorage.getItem("wss-relay-admin-token")
-    || ""
-).trim();
 const wssRelayTokenStatusLabel = computed(() => {
   if (wssRelayStatusLoading.value) return "\u6b63\u5728\u68c0\u67e5...";
   if (wssRelayTokenInitialized.value === true) return "\u540e\u7aef\u5df2\u521d\u59cb\u5316";
   if (wssRelayTokenInitialized.value === false) return "\u540e\u7aef\u672a\u521d\u59cb\u5316";
   return "\u70b9\u51fb\u5237\u65b0\u68c0\u67e5";
 });
-const refreshWssRelayStatus = async () => {
-  wssRelayStatusLoading.value = true;
-  try {
-    const res = await settingsApi.getSettings();
-    if (res?.data?.status === "success") {
-      const backendToken = res.data.data?.wssRelayToken;
-      wssRelayTokenInitialized.value = Boolean(backendToken);
-      if (typeof backendToken === "string" && backendToken !== "***") {
-        const token = backendToken.trim();
-        if (token) {
-          localStorage.setItem(WSS_RELAY_TOKEN_STORAGE_KEY, token);
-          localStorage.removeItem("wss-relay-admin-token");
-        } else {
-          localStorage.removeItem(WSS_RELAY_TOKEN_STORAGE_KEY);
-        }
-      }
-    }
-  } finally {
-    wssRelayStatusLoading.value = false;
-  }
-};
-const wssRelayClientColumns = computed(() => [
-  { text: "\u672c\u673a\u62c9\u53d6", value: "" },
-  ...wssRelayClients.value.map((client) => ({
-    text: client.pendingCount
-      ? `${client.name || client.id} (${client.pendingCount} pending)`
-      : client.name || client.id,
-    value: client.id,
-  })),
-]);
+const wssRelayClientColumns = computed(() => getWssRelayClientColumns(wssRelayClients.value, form.relayNodeId));
 const selectedWssRelayClientLabel = computed(() => {
   const relayNodeId = form.relayNodeId || "";
   if (!relayNodeId) return "\u672c\u673a\u62c9\u53d6";
   return wssRelayClientColumns.value.find((item) => item.value === relayNodeId)?.text
     || relayNodeId;
 });
-const fetchWssRelayClients = async (notify = true) => {
-  const token = getStoredWssRelayToken();
-  if (!token) {
-    wssRelayClients.value = [];
-    if (!notify) return;
-    Toast.warn("\u8bf7\u5148\u5728\u8bbe\u7f6e\u9875\u521d\u59cb\u5316 WSS \u8fde\u63a5 Token");
-    return;
-  }
-  const res = await settingsApi.getWssRelayClients(token);
-  if (res?.data?.status !== "success") return;
-
-  const responseData = res.data.data;
-  const clients = Array.isArray(responseData)
-    ? responseData
-    : Array.isArray(responseData?.clients)
-      ? responseData.clients
-      : [];
-  wssRelayClients.value = clients.filter((client: WssRelayClient) => client?.id);
-  if (!notify) return;
-  Toast.text(`\u5df2\u5237\u65b0 ${wssRelayClients.value.length} \u4e2a\u5728\u7ebf\u8282\u70b9`);
-};
 const refreshWssRelayPanel = async () => {
-  await refreshWssRelayStatus();
-  await fetchWssRelayClients();
+  if (await refreshWssRelay()) Toast.text(`已刷新 ${wssRelayClients.value.length} 个在线节点`);
 };
 const openWssRelayClientPicker = async () => {
+  await refreshWssRelay();
   selectedWssRelayClientValue.value = [form.relayNodeId || ""];
-  if (wssRelayClients.value.length === 0) {
-    await refreshWssRelayPanel();
-  }
   showWssRelayClientPicker.value = true;
 };
 const handleWssRelayClientConfirm = ({ selectedValue }: { selectedValue?: unknown[] }) => {
@@ -1001,14 +945,9 @@ const normalizeRelayNodeId = (data: any) => {
   const sourceMode = isMihomoConfigFileType(data.type)
     ? data.sourceType
     : data.source;
-  const relayNodeId = `${data.relayNodeId || ""}`.trim();
-  if (sourceMode === "remote" && relayNodeId) {
-    data.relayNodeId = relayNodeId;
-  } else {
-    delete data.relayNodeId;
-  }
+  normalizeRelaySelection(data, sourceMode === "remote");
 };
-void refreshWssRelayPanel();
+void refreshWssRelay();
 const showIncludeUnsupportedProxy = computed(() => {
   return (
     isMihomoConfigFile.value &&

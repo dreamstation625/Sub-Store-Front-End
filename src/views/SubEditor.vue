@@ -650,7 +650,7 @@
     :ok-text="$t('editorPage.subConfig.sourceNamePicker.confirm')"
     @confirm="handleWssRelayClientConfirm"
   >
-    <p v-if="wssRelayClientColumns.length <= 1">请先在设置页初始化 WSS 连接 Token</p>
+    <p v-if="wssRelayClients.length === 0">{{ wssRelayTokenInitialized === false ? "请先在设置页初始化 WSS 连接 Token" : "暂无在线节点；已保存的节点选择会保留，请检查客户端连接" }}</p>
   </DesktopPicker>
   <tag-popup
     v-model:visible="tagPopupVisible"
@@ -663,7 +663,8 @@
 <script lang="ts" setup>
 import { useArtifactsStore } from "@/store/artifacts";
 import { useSubsApi } from "@/api/subs";
-import { useSettingsApi, type WssRelayClient } from "@/api/settings";
+import { useWssRelay } from "@/hooks/useWssRelay";
+import { getWssRelayClientColumns, normalizeRelayNodeId } from "@/utils/wssRelay";
 import logoIcon from "@/assets/icons/logo.png";
 import logoRedIcon from "@/assets/icons/logo-red.png";
 import { usePopupRoute } from "@/hooks/usePopupRoute";
@@ -727,9 +728,7 @@ const router = useRouter();
 const SUB_EDITOR_TAB_STORAGE_KEY = "sub-editor-active-tab";
 const MANUAL_SUBSCRIPTIONS_FOLD_STORAGE_KEY = "manual-subscriptions-fold";
 const MANUAL_SUBSCRIPTIONS_GROUP_STORAGE_KEY = "manual-subscriptions-group";
-const WSS_RELAY_TOKEN_STORAGE_KEY = "wss-relay-token";
 const subsApi = useSubsApi();
-const settingsApi = useSettingsApi();
 const editType = route.params.editType as string;
 const configName = route.params.id as string;
 const subsStore = useSubsStore();
@@ -951,98 +950,39 @@ const selectedSubs = computed(() => {
     }).join(', ')}`
   });
 const selectedSubsDisplay = computed(() => selectedSubs.value.replace(/^:\s*/, ""));
-const wssRelayTokenInitialized = ref<boolean | null>(null);
-const wssRelayStatusLoading = ref(false);
-const wssRelayClients = ref<WssRelayClient[]>([]);
+const {
+  initialized: wssRelayTokenInitialized,
+  loading: wssRelayStatusLoading,
+  clients: wssRelayClients,
+  refresh: refreshWssRelay,
+} = useWssRelay(true);
 const showWssRelayClientPicker = ref(false);
 const selectedWssRelayClientValue = ref<string[]>([""]);
-const getStoredWssRelayToken = () => (
-  localStorage.getItem(WSS_RELAY_TOKEN_STORAGE_KEY)
-    || localStorage.getItem("wss-relay-admin-token")
-    || ""
-).trim();
 const wssRelayTokenStatusLabel = computed(() => {
   if (wssRelayStatusLoading.value) return "正在检查...";
   if (wssRelayTokenInitialized.value === true) return "后端已初始化";
   if (wssRelayTokenInitialized.value === false) return "后端未初始化";
   return "点击刷新检查";
 });
-const refreshWssRelayStatus = async () => {
-  wssRelayStatusLoading.value = true;
-  try {
-    const res = await settingsApi.getSettings();
-    if (res?.data?.status !== "success") return;
-
-    const backendToken = res.data.data?.wssRelayToken;
-    wssRelayTokenInitialized.value = Boolean(backendToken);
-    if (typeof backendToken === "string" && backendToken !== "***") {
-      const token = backendToken.trim();
-      if (token) {
-        localStorage.setItem(WSS_RELAY_TOKEN_STORAGE_KEY, token);
-        localStorage.removeItem("wss-relay-admin-token");
-      } else {
-        localStorage.removeItem(WSS_RELAY_TOKEN_STORAGE_KEY);
-      }
-    }
-  } finally {
-    wssRelayStatusLoading.value = false;
-  }
-};
-const formatWssRelayClientLabel = (client: WssRelayClient) => {
-  const displayName = client.name || client.id;
-  return client.pendingCount
-    ? displayName + " (" + client.pendingCount + " pending)"
-    : displayName;
-};
-const wssRelayClientColumns = computed(() => [
-  { text: "本机拉取", value: "" },
-  ...wssRelayClients.value.map((client) => ({
-    text: formatWssRelayClientLabel(client),
-    value: client.id,
-  })),
-]);
+const wssRelayClientColumns = computed(() => getWssRelayClientColumns(wssRelayClients.value, form.relayNodeId));
 const selectedWssRelayClientLabel = computed(() => {
   const relayNodeId = form.relayNodeId || "";
   if (!relayNodeId) return "本机拉取";
   return wssRelayClientColumns.value.find((item) => item.value === relayNodeId)?.text || relayNodeId;
 });
-const fetchWssRelayClients = async (notify = true) => {
-  const token = getStoredWssRelayToken();
-  if (!token) {
-    wssRelayClients.value = [];
-    if (!notify) return;
-    Toast.warn("请先在设置页初始化 WSS 连接 Token");
-    return;
-  }
-  const res = await settingsApi.getWssRelayClients(token);
-  if (res?.data?.status !== "success") return;
-
-  const responseData = res.data.data;
-  const clients = Array.isArray(responseData)
-    ? responseData
-    : Array.isArray(responseData?.clients)
-      ? responseData.clients
-      : [];
-  wssRelayClients.value = clients.filter((client: WssRelayClient) => client?.id);
-  if (!notify) return;
-  Toast.text("已刷新 " + wssRelayClients.value.length + " 个在线节点");
-};
 const refreshWssRelayPanel = async () => {
-  await refreshWssRelayStatus();
-  await fetchWssRelayClients();
+  if (await refreshWssRelay()) Toast.text(`已刷新 ${wssRelayClients.value.length} 个在线节点`);
 };
 const openWssRelayClientPicker = async () => {
+  await refreshWssRelay();
   selectedWssRelayClientValue.value = [form.relayNodeId || ""];
-  if (wssRelayClients.value.length === 0) {
-    await refreshWssRelayPanel();
-  }
   showWssRelayClientPicker.value = true;
 };
 const handleWssRelayClientConfirm = ({ selectedValue }: { selectedValue?: unknown[] }) => {
   form.relayNodeId = typeof selectedValue?.[0] === "string" ? selectedValue[0] : "";
   showWssRelayClientPicker.value = false;
 };
-void refreshWssRelayPanel();
+void refreshWssRelay();
   const subFailureModeOptions = computed(() => {
     const prefix = "editorPage.subConfig.basic.ignoreFailedRemoteSub";
     return [
@@ -1335,8 +1275,7 @@ const fetchCompareData = async () => {
       delete data.relayNodeId;
     } else {
       delete data.firstSubFlow;
-      data.relayNodeId = `${data.relayNodeId || ""}`.trim();
-      if (!data.relayNodeId) delete data.relayNodeId;
+      normalizeRelayNodeId(data, data.source === "remote");
     }
     data.tag = [
       ...new Set(
@@ -1513,8 +1452,7 @@ const submit = () => {
       delete data.relayNodeId;
     } else {
       delete data.firstSubFlow;
-      data.relayNodeId = `${data.relayNodeId || ""}`.trim();
-      if (!data.relayNodeId) delete data.relayNodeId;
+      normalizeRelayNodeId(data, data.source === "remote");
     }
 
     console.log('submit.....\n', data);

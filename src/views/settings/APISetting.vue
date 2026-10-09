@@ -280,14 +280,12 @@ import { copyText } from '@/utils/clipboard';
 import { storeToRefs } from 'pinia';
 import { useAppNotifyStore } from '@/store/appNotify';
 import { useSettingsStore } from '@/store/settings';
-import { useSettingsApi } from '@/api/settings';
+import { useWssRelay } from '@/hooks/useWssRelay';
 import { createGithubProxyUrlRewriter } from '@/utils/githubProxy';
 import { isValidShareBaseUrl, normalizeShareBaseUrl } from '@/utils/share';
 
 const { t } = useI18n();
 const { showNotify } = useAppNotifyStore();
-const WSS_RELAY_TOKEN_STORAGE_KEY = 'wss-relay-token';
-const settingsApi = useSettingsApi();
 
 const { icon, env, isEnvReady } = useBackend();
 const settingsStore = useSettingsStore();
@@ -318,15 +316,14 @@ const error = ref('');
 const shareBaseUrlError = ref('');
 const checkingAPI = ref(false);
 const switchingAPI = ref(false);
-const creatingWssRelayToken = ref(false);
-const wssRelayStatusLoading = ref(false);
-const wssRelayTokenInitialized = ref<boolean | null>(null);
-let wssRelayStatusRequestId = 0;
-const wssRelayToken = ref(
-  localStorage.getItem(WSS_RELAY_TOKEN_STORAGE_KEY)
-    || localStorage.getItem('wss-relay-admin-token')
-    || '',
-);
+const {
+  token: wssRelayToken,
+  initialized: wssRelayTokenInitialized,
+  loading: wssRelayStatusLoading,
+  creating: creatingWssRelayToken,
+  refresh: refreshWssRelayStatus,
+  initialize: initializeWssRelayToken,
+} = useWssRelay();
 const hasLocalWssRelayToken = computed(() => Boolean(wssRelayToken.value.trim()));
 const wssRelayTokenStatusLabel = computed(() => {
   if (wssRelayStatusLoading.value) return '正在检查...';
@@ -353,56 +350,9 @@ const parsedPath = ref('');
 const previewUrl = ref('');
 const currentOrigin = ref(window.location.origin);
 
-const refreshWssRelayStatus = async () => {
-  const requestId = ++wssRelayStatusRequestId;
-  wssRelayStatusLoading.value = true;
-  try {
-    const res = await settingsApi.getSettings();
-    if (requestId !== wssRelayStatusRequestId) return;
-    if (res?.data?.status !== 'success') {
-      wssRelayTokenInitialized.value = null;
-      return;
-    }
-    const backendToken = res.data.data?.wssRelayToken;
-    wssRelayTokenInitialized.value = Boolean(backendToken);
-    if (typeof backendToken === 'string' && backendToken !== '***') {
-      const token = backendToken.trim();
-      wssRelayToken.value = token;
-      if (token) {
-        localStorage.setItem(WSS_RELAY_TOKEN_STORAGE_KEY, token);
-        localStorage.removeItem('wss-relay-admin-token');
-      } else {
-        localStorage.removeItem(WSS_RELAY_TOKEN_STORAGE_KEY);
-      }
-    }
-  } catch {
-    if (requestId !== wssRelayStatusRequestId) return;
-    wssRelayTokenInitialized.value = null;
-  } finally {
-    if (requestId === wssRelayStatusRequestId) {
-      wssRelayStatusLoading.value = false;
-    }
-  }
-};
-
 const initWssRelayToken = async () => {
-  if (creatingWssRelayToken.value) return;
-  creatingWssRelayToken.value = true;
-  try {
-    const currentToken = wssRelayToken.value.trim();
-    const res = await settingsApi.createWssRelayToken(currentToken, false);
-    if (res?.data?.status !== 'success') return;
-
-    const token = res.data.data?.token || '';
-    if (!token) return;
-
-    wssRelayToken.value = token;
-    localStorage.setItem(WSS_RELAY_TOKEN_STORAGE_KEY, token);
-    localStorage.removeItem('wss-relay-admin-token');
-    wssRelayTokenInitialized.value = true;
+  if (await initializeWssRelayToken()) {
     showNotify({ title: 'WSS 连接 Token 已初始化', type: 'success' });
-  } finally {
-    creatingWssRelayToken.value = false;
   }
 };
 
@@ -826,11 +776,6 @@ watchEffect(() => {
     previewUrl.value = `${currentOrigin.value}${(parsedPath.value && parsedPath.value !== '/') ? `/${parsedPath.value}` : ''}`;
   }
 });
-
-watch(currentName, () => {
-  wssRelayTokenInitialized.value = null;
-  void refreshWssRelayStatus();
-}, { flush: 'post' });
 
 onMounted(() => {
   void refreshWssRelayStatus();

@@ -12,8 +12,9 @@ export interface WssRelayClient {
 
 export function useSettingsApi() {
   return {
-    getSettings: (): AxiosPromise<MyAxiosRes> => {
+    getSettings: (backend?: string): AxiosPromise<MyAxiosRes> => {
       return request({
+        ...(backend ? { baseURL: backend } : {}),
         url: '/api/settings',
         method: 'get',
       });
@@ -51,8 +52,9 @@ export function useSettingsApi() {
         data,
       });
     },
-    getWssRelayClients: (token: string): AxiosPromise<MyAxiosRes> => {
+    getWssRelayClients: (token: string, backend?: string): AxiosPromise<MyAxiosRes> => {
       return request({
+        ...(backend ? { baseURL: backend } : {}),
         url: '/api/wss/clients',
         method: 'get',
         headers: {
@@ -60,8 +62,9 @@ export function useSettingsApi() {
         },
       });
     },
-    createWssRelayToken: (token = '', rotate = false): AxiosPromise<MyAxiosRes> => {
+    createWssRelayToken: (token = '', rotate = false, backend?: string): AxiosPromise<MyAxiosRes> => {
       return request({
+        ...(backend ? { baseURL: backend } : {}),
         url: '/api/wss/token',
         method: 'post',
         data: { rotate },
