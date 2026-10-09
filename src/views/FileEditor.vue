@@ -335,6 +335,19 @@
                 />
               </div>
             </nut-form-item>
+            <nut-form-item
+              v-if="
+                fileSourceMode === 'remote' ||
+                ['localFirst', 'remoteFirst'].includes(form.mergeSources)
+              "
+              :label="$t(`editorPage.subConfig.basic.noCache.label`)"
+              prop="noCache"
+              class="ignore-failed-wrapper"
+            >
+              <div class="switch-wrapper">
+                <nut-switch v-model="form.noCache" />
+              </div>
+            </nut-form-item>
             <!-- ua -->
             <nut-form-item
               :label="$t(`editorPage.subConfig.basic.ua.label`)"
@@ -660,6 +673,7 @@ const FILE_EDITOR_PROP_TO_TAB: Partial<Record<string, FileEditorTab>> = {
   content: "content",
   ua: "content",
   relayNodeId: "content",
+  noCache: "content",
   proxy: "content",
   mergeSources: "content",
   download: "content",
@@ -845,6 +859,7 @@ const form = reactive<any>({
   relayNodeId: "",
   mode: "config",
   includeUnsupportedProxy: false,
+  noCache: false,
   process: [],
   type: UNTITLED_MIHOMO_CONFIG_FILE_NAMES.includes(configName) ? MIHOMO_CONFIG_FILE_TYPE : 'file',
 });
@@ -1096,6 +1111,7 @@ watchEffect(() => {
     ? sourceData.tag.join(", ")
     : sourceData.tag;
     form.ua = sourceData.ua;
+    form.noCache = sourceData.noCache === true;
     form.mergeSources = sourceData.mergeSources;
     form.content = sourceData.content;
     cmStore.setEditCode("FileEditer", sourceData.content);

@@ -43,6 +43,7 @@ interface Sub {
   ua?: string;
   relayNodeId?: string;
   mergeSources?: string;
+  noCache?: boolean;
   noFlow?: boolean;
   subUserinfo?: string;
   tag?: string[];

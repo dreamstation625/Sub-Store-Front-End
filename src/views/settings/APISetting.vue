@@ -276,8 +276,7 @@ import { useBackend } from '@/hooks/useBackend';
 import { useHostAPI } from '@/hooks/useHostAPI';
 import axios from 'axios';
 
-import { useClipboard } from '@vueuse/core';
-import useV3Clipboard from 'vue-clipboard3';
+import { copyText } from '@/utils/clipboard';
 import { storeToRefs } from 'pinia';
 import { useAppNotifyStore } from '@/store/appNotify';
 import { useSettingsStore } from '@/store/settings';
@@ -286,8 +285,6 @@ import { createGithubProxyUrlRewriter } from '@/utils/githubProxy';
 import { isValidShareBaseUrl, normalizeShareBaseUrl } from '@/utils/share';
 
 const { t } = useI18n();
-const { copy, isSupported } = useClipboard();
-const { toClipboard: copyFallback } = useV3Clipboard();
 const { showNotify } = useAppNotifyStore();
 const WSS_RELAY_TOKEN_STORAGE_KEY = 'wss-relay-token';
 const settingsApi = useSettingsApi();
@@ -415,12 +412,12 @@ const copyWssRelayToken = async () => {
     showNotify({ title: '请先初始化 WSS 连接 Token', type: 'danger' });
     return;
   }
-  if (isSupported) {
-    await copy(token);
-  } else {
-    await copyFallback(token);
+  try {
+    await copyText(token);
+    showNotify({ title: 'WSS 连接 Token 已复制', type: 'success' });
+  } catch (error) {
+    Toast.fail(t("globalNotify.copyFailed", { e: error?.message ?? String(error) }));
   }
-  showNotify({ title: 'WSS 连接 Token 已复制', type: 'success' });
 };
 
 const copyApi = async (api: HostAPI) => {
@@ -429,12 +426,12 @@ const copyApi = async (api: HostAPI) => {
   if (api.shareBaseUrl) {
     url.searchParams.set('shareBaseUrl', api.shareBaseUrl);
   }
-  if (isSupported) {
-    await copy(url.toString());
-  } else {
-    await copyFallback(url.toString());
+  try {
+    await copyText(url.toString());
+    showNotify({ title: url.toString() });
+  } catch (error) {
+    Toast.fail(t("globalNotify.copyFailed", { e: error?.message ?? String(error) }));
   }
-  showNotify({ title: url.toString() });
 };
 
 const startEditApiName = (api: HostAPI) => {
