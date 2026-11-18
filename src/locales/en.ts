@@ -196,6 +196,13 @@ export default {
       local: "Local",
       remote: "Remote",
     },
+    sourceBadge: {
+      subscription: "Sub",
+      collection: "Group",
+      remote: "Remote",
+      local: "Local",
+      none: "None",
+    },
     mode: {
       label: "Mode",
       config: "Use as mihomo config",
@@ -390,15 +397,19 @@ export default {
         subInfoUrl: {
           label: "Sub Info URL",
           placeholder: "URL for fetching subscription usage info(supports headers etc.)",
+          autoSubscription: "Leave empty to use this subscription's usage info",
+          autoCollection: "Leave empty to use the first subscription's usage info",
+          autoRemote: "Leave empty to use the remote file URL",
           tips: {
             title: "Sub Info URL",
             content:
-              'Fill in the URL used to fetch subscription usage info. The response body, or response headers subscription-userinfo/profile-web-page-url/plan-name, will be used as the file usage info.\n\nSupported parameters:\nheaders: custom request headers(single-line JSON string)\ninsecure: do not verify the server certificate\nnoCache: do not use cache\nheadersCacheTtl: headers cache ttl(seconds)\n\nExample: http://a.com/userinfo#headers=%7B%22Authorization%22%3A%22Bearer%20token%22%7D',
+              'Fill in the URL used to fetch subscription usage info. The response body, or response headers subscription-userinfo/profile-web-page-url/plan-name, will be used as the file usage info.\n\nFor mihomo config files whose source is a subscription, collection or remote URL, leaving it empty falls back to the upstream URL; a subscription\'s own usage info takes priority.\n\nSupported parameters:\nheaders: custom request headers(single-line JSON string)\ninsecure: do not verify the server certificate\nnoCache: do not use cache\nheadersCacheTtl: headers cache ttl(seconds)\n\nExample: http://a.com/userinfo#headers=%7B%22Authorization%22%3A%22Bearer%20token%22%7D',
           },
         },
         subInfoUserAgent: {
           label: "Sub Info User-Agent",
           placeholder: "User-Agent for fetching subscription usage info",
+          autoPlaceholder: "Leave empty to use the upstream subscription User-Agent",
         },
         tag: {
           label: "Tag(s)",

@@ -192,6 +192,13 @@ export default {
       local: '本地',
       remote: '远程',
     },
+    sourceBadge: {
+      subscription: '订阅',
+      collection: '组合',
+      remote: '远程',
+      local: '本地',
+      none: '无',
+    },
     mode: {
       label: '模式',
       config: '作为 mihomo 配置',
@@ -385,14 +392,18 @@ export default {
         subInfoUrl: {
           label: '查询流量信息订阅链接',
           placeholder: '用于查询流量信息的订阅链接(支持 headers 等参数)',
+          autoSubscription: '留空则使用该订阅的流量信息',
+          autoCollection: '留空则使用组合订阅第一条订阅的流量信息',
+          autoRemote: '留空则使用远程文件链接查询流量信息',
           tips: {
             title: '查询流量信息订阅链接',
-            content: '填写用于查询流量信息的链接, 会使用响应体内容或响应头 subscription-userinfo/profile-web-page-url/plan-name 作为文件的流量信息.\n\n支持参数:\nheaders: 自定义请求头(单行 JSON 字符串)\ninsecure: 不验证服务器证书\nnoCache: 不使用缓存\nheadersCacheTtl: 响应头缓存时长(秒)\n\n例: http://a.com/userinfo#headers=%7B%22Authorization%22%3A%22Bearer%20token%22%7D',
+            content: '填写用于查询流量信息的链接, 会使用响应体内容或响应头 subscription-userinfo/profile-web-page-url/plan-name 作为文件的流量信息.\n\n文件类型为 mihomo 配置且来源为单条订阅/组合订阅/远程时, 留空会自动使用上游链接查询; 订阅填写了「订阅流量信息」时优先使用它.\n\n支持参数:\nheaders: 自定义请求头(单行 JSON 字符串)\ninsecure: 不验证服务器证书\nnoCache: 不使用缓存\nheadersCacheTtl: 响应头缓存时长(秒)\n\n例: http://a.com/userinfo#headers=%7B%22Authorization%22%3A%22Bearer%20token%22%7D',
           },
         },
         subInfoUserAgent: {
           label: '查询流量信息 User-Agent',
           placeholder: '不设置则使用默认 User-Agent',
+          autoPlaceholder: '留空则使用上游订阅的 User-Agent',
         },
         tag: {
           label: '标签',

@@ -405,7 +405,7 @@
               class="nut-input-text"
               data-1p-ignore
               v-model.trim="form.subInfoUrl"
-              :placeholder="$t(`editorPage.subConfig.basic.subInfoUrl.placeholder`)"
+              :placeholder="subInfoUrlPlaceholder"
               type="text"
               input-align="right"
               left-icon="tips"
@@ -420,9 +420,7 @@
               class="nut-input-text"
               data-1p-ignore
               v-model.trim="form.subInfoUserAgent"
-              :placeholder="
-                $t(`editorPage.subConfig.basic.subInfoUserAgent.placeholder`)
-              "
+              :placeholder="subInfoUserAgentPlaceholder"
               type="text"
             />
           </nut-form-item>
@@ -843,6 +841,30 @@ const showIncludeUnsupportedProxy = computed(() => {
       (isMihomoConfigFileSource.value && form.mode === "proxy")
     )
   );
+});
+// mihomo 配置留空查询流量信息时, 提示会自动使用哪条上游链接
+const subInfoUrlPlaceholder = computed(() => {
+  if (isMihomoConfigFile.value) {
+    if (form.sourceType === "subscription") {
+      return t("editorPage.subConfig.basic.subInfoUrl.autoSubscription");
+    }
+    if (form.sourceType === "collection") {
+      return t("editorPage.subConfig.basic.subInfoUrl.autoCollection");
+    }
+    if (form.sourceType === "remote") {
+      return t("editorPage.subConfig.basic.subInfoUrl.autoRemote");
+    }
+  }
+  return t("editorPage.subConfig.basic.subInfoUrl.placeholder");
+});
+const subInfoUserAgentPlaceholder = computed(() => {
+  if (
+    isMihomoConfigFile.value &&
+    mihomoConfigSubscriptionSourceTypes.includes(form.sourceType)
+  ) {
+    return t("editorPage.subConfig.basic.subInfoUserAgent.autoPlaceholder");
+  }
+  return t("editorPage.subConfig.basic.subInfoUserAgent.placeholder");
 });
 // 排除非动作卡片
 const ignoreList = ["Quick Setting Operator"];

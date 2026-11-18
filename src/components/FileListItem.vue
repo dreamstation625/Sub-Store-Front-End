@@ -20,7 +20,7 @@
         :style="{ 'margin-top': imageMarginTop }"
       >
         <!-- icon visible -->
-        <div v-if="appearanceSetting.isShowIcon">
+        <div v-if="appearanceSetting.isShowIcon" class="avatar-shell">
           <div v-if="isIconColor">
             <nut-avatar
               v-if="props[props.type].icon"
@@ -43,6 +43,11 @@
               bg-color=""
             />
           </div>
+          <span
+            v-if="sourceBadge"
+            class="source-badge"
+            :class="`is-${sourceBadge.key}`"
+          >{{ sourceBadge.label }}</span>
         </div>
       </div>
       <div class="sub-item-content">
@@ -52,6 +57,11 @@
             class="sub-item-title"
             :title="displayName"
           >
+            <span
+              v-if="sourceBadge && !appearanceSetting.isShowIcon"
+              class="source-badge is-inline"
+              :class="`is-${sourceBadge.key}`"
+            >{{ sourceBadge.label }}</span>
             <span class="sub-item-name">{{ displayName }}</span>
             <span v-for="i in tag" :key="i" class="tag">
               <nut-tag>{{ i }}</nut-tag>
@@ -63,6 +73,11 @@
             style="color: var(--primary-text-color); font-size: 16px"
             :title="displayName"
           >
+            <span
+              v-if="sourceBadge && !appearanceSetting.isShowIcon"
+              class="source-badge is-inline"
+              :class="`is-${sourceBadge.key}`"
+            >{{ sourceBadge.label }}</span>
             <span class="sub-item-name">{{ displayName }}</span>
             <span v-for="i in tag" :key="i" class="tag">
               <nut-tag>{{ i }}</nut-tag>
@@ -390,6 +405,18 @@
     if (isMihomoConfigFileType(props.file.type)) return t('filePage.type.mihomoConfig');
     if (props.file.source === 'remote') return t('filePage.source.remote');
     return t('filePage.source.local');
+  });
+  // mihomo 配置的来源角标: 订阅 / 组合 / 远程 / 本地 / 无
+  const mihomoSourceTypes = ["subscription", "collection", "remote", "local", "none"];
+  const sourceBadge = computed(() => {
+    if (!isMihomoConfigFileType(props.file.type)) return null;
+    const sourceType = mihomoSourceTypes.includes(props.file.sourceType)
+      ? props.file.sourceType
+      : "collection";
+    return {
+      key: sourceType,
+      label: t(`filePage.sourceBadge.${sourceType}`),
+    };
   });
   const simpleDetailLine = computed(() => {
     if (!shouldInlineRemarkInSecondLine.value) {
@@ -912,5 +939,72 @@
   .sub-img-wrappers {
     display: flex;
     align-items: center;
+  }
+
+  /* mihomo 配置来源角标: 头像右下角胶囊, 图标隐藏时退化到标题前 */
+  .sub-item-swipe .sub-item-wrapper .avatar-shell {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    margin-right: 15px;
+  }
+
+  .sub-item-swipe.is-dual-column .sub-item-wrapper .avatar-shell {
+    margin-right: 12px;
+  }
+
+  .sub-item-swipe .sub-item-wrapper .avatar-shell :deep(.nut-avatar) {
+    margin-right: 0;
+  }
+
+  .source-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 15px;
+    padding: 0 5px;
+    border-radius: 999px;
+    border: 1.5px solid var(--card-color);
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    color: #fff;
+    pointer-events: none;
+
+    &:not(.is-inline) {
+      position: absolute;
+      right: -5px;
+      bottom: -5px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.16);
+    }
+
+    &.is-inline {
+      flex-shrink: 0;
+      margin-right: 2px;
+      border-color: transparent;
+    }
+
+    &.is-subscription {
+      background: #478ef2;
+    }
+
+    &.is-collection {
+      background: #7a5af8;
+    }
+
+    &.is-remote {
+      background: #e0912f;
+    }
+
+    &.is-local {
+      background: #33a06f;
+    }
+
+    &.is-none {
+      background: #9aa0a6;
+    }
   }
 </style>

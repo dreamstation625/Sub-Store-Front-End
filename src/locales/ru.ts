@@ -188,6 +188,13 @@ export default {
       "local": "Локальный",
       "remote": "Удаленный"
     },
+    "sourceBadge": {
+      "subscription": "Подп.",
+      "collection": "Сбор.",
+      "remote": "Удал.",
+      "local": "Лок.",
+      "none": "Нет"
+    },
     "mode": {
       "label": "Режим",
       "config": "Использовать как конфиг mihomo",
@@ -375,14 +382,18 @@ export default {
         "subInfoUrl": {
           "label": "URL информации о подписке",
           "placeholder": "URL для получения данных трафика (поддерживает заголовки и т. д.)",
+          "autoSubscription": "Оставьте пустым, чтобы использовать данные этой подписки",
+          "autoCollection": "Оставьте пустым, чтобы использовать данные первой подписки",
+          "autoRemote": "Оставьте пустым, чтобы использовать URL удаленного файла",
           "tips": {
             "title": "URL информации о подписке",
-            "content": "Укажите URL, используемый для запроса данных о подписке. Тело ответа или заголовки (subscription-userinfo/profile-web-page-url/plan-name) будут распарсены как инфо о лимитах.\n\nПоддерживаемые параметры:\nheaders: кастомные заголовки запроса (однострочный JSON)\ninsecure: отключить проверку SSL-сертификата сервера\noCache: не использовать кэш\nheadersCacheTtl: время кэширования заголовков (сек)\n\nПример: http://a.com/userinfo#headers=%7B%22Authorization%22%3A%22Bearer%20token%22%7D"
+            "content": "Укажите URL, используемый для запроса данных о подписке. Тело ответа или заголовки (subscription-userinfo/profile-web-page-url/plan-name) будут распарсены как инфо о лимитах.\n\nДля файлов конфигурации mihomo с источником «подписка», «коллекция» или «удаленный URL» пустое поле означает использование вышестоящего URL; собственные данные трафика подписки имеют приоритет.\n\nПоддерживаемые параметры:\nheaders: кастомные заголовки запроса (однострочный JSON)\ninsecure: отключить проверку SSL-сертификата сервера\noCache: не использовать кэш\nheadersCacheTtl: время кэширования заголовков (сек)\n\nПример: http://a.com/userinfo#headers=%7B%22Authorization%22%3A%22Bearer%20token%22%7D"
           }
         },
         "subInfoUserAgent": {
           "label": "User-Agent информации о подписке",
-          "placeholder": "Задать User-Agent для запроса информации о подписке"
+          "placeholder": "Задать User-Agent для запроса информации о подписке",
+          "autoPlaceholder": "Оставьте пустым, чтобы использовать User-Agent вышестоящей подписки"
         },
         "tag": {
           "label": "Тег(и)",
